@@ -237,7 +237,7 @@ private lemma inv_exp_le_pow {d : ℕ} (hd : 0 < d) :
     _ ≤ ((d : ℝ) / (d + 1)) ^ d * Real.exp 1 :=
         mul_le_mul_of_nonneg_left hle (by positivity)
 
-/-- **The Lovász Local Lemma**, asymmetric form (Zhao, Theorem 6.1.x), where the dependency
+/-- **The Lovász Local Lemma**, asymmetric form (Zhao, Theorem 6.1.9), where the dependency
 hypothesis is genuine mutual independence: `A i` is independent of every family of
 complements drawn from outside `insert i (N i)`.
 
@@ -255,7 +255,7 @@ theorem lovasz_local_lemma (w : Ω → ℝ) (hw : ∀ ω, 0 ≤ w ω) (hsum : �
   lovasz_local_lemma_lopsided w hw hsum A N x hx0 hx1 hself
     (fun i T hT => (hindep i T hT).le) hbound
 
-/-- **The lopsided Lovász Local Lemma**, symmetric form (Zhao, §6.5).
+/-- **The lopsided Lovász Local Lemma**, symmetric form (Zhao, Corollary 6.5.2).
 
 If every event has probability at most `p`, is negatively correlated with the complements of
 any subfamily outside its own neighbourhood, that neighbourhood has at most `d` members, and
@@ -324,7 +324,8 @@ theorem lovasz_local_lemma_symmetric_lopsided (w : Ω → ℝ) (hw : ∀ ω, 0 �
     Finset.prod_pos fun i _ => by linarith [hx1 i]
   linarith
 
-/-- **The Lovász Local Lemma**, symmetric form (Zhao, §6.1), under genuine independence.
+/-- **The Lovász Local Lemma**, symmetric form (Zhao, Theorem 6.1.7), under genuine
+independence.
 
 If every event has probability at most `p`, every event is independent of any subfamily
 outside `insert i (N i)`, each `N i` has at most `d` members, and `e * p * (d + 1) ≤ 1`, then
@@ -341,6 +342,69 @@ theorem lovasz_local_lemma_symmetric (w : Ω → ℝ) (hw : ∀ ω, 0 ≤ w ω) 
     0 < wprob w (noneOf A (univ : Finset ι)) :=
   lovasz_local_lemma_symmetric_lopsided w hw hsum A N hd hp0 hself hdeg
     (fun i T hT => (hindep i T hT).le) hprob hep
+
+/-! ### Corollary 6.1.10 -/
+
+/-- **The Weierstrass product inequality**: `1 - ∑ yᵢ ≤ ∏ (1 - yᵢ)` for `yᵢ ∈ [0,1]`.
+Not in Mathlib, and a two-line induction. -/
+private lemma one_sub_sum_le_prod_one_sub {ι' : Type*} [DecidableEq ι'] (s : Finset ι')
+    (y : ι' → ℝ) (hy0 : ∀ i, 0 ≤ y i) (hy1 : ∀ i, y i ≤ 1) :
+    1 - ∑ i ∈ s, y i ≤ ∏ i ∈ s, (1 - y i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | @insert a s ha ih =>
+      rw [Finset.sum_insert ha, Finset.prod_insert ha]
+      have hnn : 0 ≤ 1 - y a := by linarith [hy1 a]
+      have hsum : 0 ≤ ∑ i ∈ s, y i := Finset.sum_nonneg fun i _ => hy0 i
+      calc 1 - (y a + ∑ i ∈ s, y i) ≤ (1 - y a) * (1 - ∑ i ∈ s, y i) := by
+            nlinarith [hy0 a, hsum]
+        _ ≤ (1 - y a) * ∏ i ∈ s, (1 - y i) := mul_le_mul_of_nonneg_left ih hnn
+
+/-- **Corollary 6.1.10.** If every bad event has probability less than `1/2` and the
+probabilities in each dependency neighbourhood sum to at most `1/4`, then with positive
+probability none of the events occurs.
+
+The asymmetric local lemma at `xᵢ = 2 P(Aᵢ)`: the required bound
+`P(Aᵢ) ≤ xᵢ ∏_{j ∈ N(i)} (1 - xⱼ)` becomes `1/2 ≤ ∏ (1 - 2P(Aⱼ))`, which the Weierstrass
+product inequality delivers from `∑_{j ∈ N(i)} 2P(Aⱼ) ≤ 1/2`. -/
+theorem lovasz_local_lemma_quarter (w : Ω → ℝ) (hw : ∀ ω, 0 ≤ w ω) (hsum : ∑ ω, w ω = 1)
+    (A : ι → Finset Ω) (N : ι → Finset ι)
+    (hself : ∀ i, i ∉ N i)
+    (hindep : ∀ (i : ι) (T : Finset ι), Disjoint T (insert i (N i)) →
+      wprob w (A i ∩ noneOf A T) = wprob w (A i) * wprob w (noneOf A T))
+    (hhalf : ∀ i, wprob w (A i) < 1 / 2)
+    (hquarter : ∀ i, ∑ j ∈ N i, wprob w (A j) ≤ 1 / 4) :
+    0 < wprob w (noneOf A (univ : Finset ι)) := by
+  classical
+  set x : ι → ℝ := fun i => 2 * wprob w (A i) with hxdef
+  have hx0 : ∀ i, 0 ≤ x i := fun i => by
+    rw [hxdef]
+    have := wprob_nonneg hw (A i)
+    linarith
+  have hx1 : ∀ i, x i < 1 := fun i => by
+    rw [hxdef]
+    have := hhalf i
+    linarith
+  have hbound : ∀ i, wprob w (A i) ≤ x i * ∏ j ∈ N i, (1 - x j) := by
+    intro i
+    have hprod : (1 : ℝ) / 2 ≤ ∏ j ∈ N i, (1 - x j) := by
+      have hW := one_sub_sum_le_prod_one_sub (N i) x hx0 (fun j => le_of_lt (hx1 j))
+      have hsumx : ∑ j ∈ N i, x j ≤ 1 / 2 := by
+        rw [hxdef, ← Finset.mul_sum]
+        have := hquarter i
+        linarith
+      linarith
+    have hPi : 0 ≤ wprob w (A i) := wprob_nonneg hw (A i)
+    calc wprob w (A i) = 2 * wprob w (A i) * (1 / 2) := by ring
+      _ ≤ x i * ∏ j ∈ N i, (1 - x j) := by
+          rw [hxdef]
+          exact mul_le_mul_of_nonneg_left hprod (by linarith)
+  have h := lovasz_local_lemma w hw hsum A N x hx0 hx1 hself hindep hbound
+  have hpos : (0 : ℝ) < ∏ i, (1 - x i) :=
+    Finset.prod_pos fun i _ => by linarith [hx1 i]
+  linarith
+
 
 end LocalLemma
 
