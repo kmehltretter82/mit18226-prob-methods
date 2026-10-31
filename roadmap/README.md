@@ -20,16 +20,124 @@ written when the phase opens, so the plan never claims more precision than it ha
 |---|---|---|---|
 | 1 | 1 Introduction | [introduction.md](introduction.md) | **complete** (8 of 8) |
 | 1 | 2 Linearity of Expectations (§2.3) | [linearity.md](linearity.md) | **complete** (3 of 3) |
-| 2 | 2 (rest) | [linearity.md](linearity.md) | `szele`, `sampling`, `sumfree`, `unbalancing` all proved; §2.6 deferred |
-| 3 | 3 Alterations | [alterations.md](alterations.md) | `dominating` proved; §3.3 upstream, §3.2 deferred, §3.4/§3.5 need design |
-| 4 | 4 Second Moment | [second-moment.md](second-moment.md) | **§4.1 complete**, §4.2, §4.4, **§4.6 (Erdős distinct sums)** proved; §4.7 upstream; §4.3 deferred |
-| 5 | 5 Chernoff Bound | [chernoff.md](chernoff.md) | **Thm 5.0.1, Cor 5.0.3, Thm 5.0.7, §5.1 proved**; 5.0.5 needs measure theory; §5.2/§5.3 open |
-| 6 | 6 Lovász Local Lemma | [local-lemma.md](local-lemma.md) | **§6.1 + §6.2 complete**: both LLL forms and hypergraph 2-colouring; §6.3–§6.6 open |
+| 2 | 2 (rest) | [linearity.md](linearity.md) | `szele`, `sampling`, `sumfree`, `unbalancing` all proved; **§2.5 complete: Thm 2.5.2 and Lemma 2.5.3 with the explicit constant `2^{-k}`**; §2.6 deferred |
+| 3 | 3 Alterations | [alterations.md](alterations.md) | `dominating`, **§3.4 (Erdős' high girth, high chromatic number)** and **§3.5 (Radhakrishnan–Srinivasan, with the constant `1/4`)** proved; §3.3 upstream (Markov, also `PMC.wmarkov`); §3.2 deferred (Heilbronn — genuinely continuous) |
+| 4 | 4 Second Moment | [second-moment.md](second-moment.md) | **§4.1 complete, including both halves of the threshold as limits (Prop 4.1.2, Thm 4.1.11)**, §4.2, §4.4, **§4.6 (Erdős distinct sums, and Thm 4.6.6 Dubroff–Fox–Xu modulo Harper)** proved; **§4.7 upstream, bridge proved** (`exists_polynomial_approx`); §4.3 deferred |
+| 5 | 5 Chernoff Bound | [chernoff.md](chernoff.md) | **§5.0 complete**: Thms 5.0.1, 5.0.5 (via Mathlib's sub-Gaussian machinery), 5.0.7, Cors 5.0.3, 5.0.6; **§5.1 proved** (5.1.6 is task #51); **§5.2 proved** (Thm 5.2.1); §5.3 open |
+| 6 | 6 Lovász Local Lemma | [local-lemma.md](local-lemma.md) | **§6.1–§6.4 complete**: both LLL forms, hypergraph 2-colouring (**including Thm 6.2.4, the non-uniform criterion**), independent transversals, Thm 6.4.3; **§6.5 complete modulo task #44**: lopsided LLL, derangement bound, and **Thm 6.5.11 (Erdős–Spencer Latin transversals)** with 6.5.5's dependency input as an explicit hypothesis; §6.6 open |
 | 7 | 7 Correlation Inequalities | [correlation.md](correlation.md) | **complete in finite form**: §7.1 upstream, §7.2 proved |
-| 8 | 8 Janson Inequalities | [janson.md](janson.md) | **Thm 8.1.1 complete** (both bounds); §8.2 extended Janson, §8.3 applications open |
-| 9 | 9 Concentration of Measure | [mathlib-survey.md](mathlib-survey.md) | **§9.1–§9.2 upstream** (Azuma–Hoeffding); §9.5 Talagrand absent |
-| 10 | 10 Entropy | [entropy.md](entropy.md) | **§10.1 + §10.4 complete**: Thms 10.4.1/10.4.3/10.4.5/**10.4.9**, Cors 10.4.6/10.4.7; §10.2, §10.3 open |
-| 11 | 11 Containers | [containers.md](containers.md) | not started — **every result is asymptotic**, so all need explicit-constant restatement first |
+| 8 | 8 Janson Inequalities | [janson.md](janson.md) | **§8.1 complete, including Cor 8.1.7's limit `e^{-c³/6}`**: Thm 8.1.2 (Janson I), Remark 8.1.3, **Thm 8.1.8 (Janson II)**, and **Thm 7.2.2** (`prob_not_hasTriangle_ge`, the triangle-free lower bound `(1-p³)^C(n,3)`); §8.2 is task #42, §8.3 asymptotic |
+| 9 | 9 Concentration of Measure | [mathlib-survey.md](mathlib-survey.md) | **§9.1 proved here** (Thm 9.1.1/9.1.3 + coupon collector) and **§9.3's Thm 9.3.1** (Shamir–Spencer), both modulo task #47; §9.2 upstream (Azuma–Hoeffding); **§9.4's cube isoperimetry started**: ball expansion and the Chernoff estimate proved, Thm 9.4.5 proved conditional on Harper (published as a task); §9.4's cube results proved (Thm 9.4.6 both routes, one Harper-free); §9.5's convex distance set up and Talagrand's inequality published as a task |
+| 10 | 10 Entropy | [entropy.md](entropy.md) | **§10.1, §10.2, §10.4 complete**; §10.4: Thms 10.4.1/10.4.3/10.4.5/10.4.9, Cors 10.4.6/10.4.7, Lemma 10.4.13, **Thm 10.4.12 (Kahn–Zhao)** and **Thm 10.4.14 (Galvin–Tetali)** — only 10.4.15 (a 2020 research result the notes state without proof) is left; §10.2: **Thm 10.2.1 (Brégman–Minc)**, Cor 10.2.2, **Lemma 10.2.7 + Thm 10.2.4's lower bound**; §10.3: Thms 10.3.3 (Blakey–Roy), 10.3.6 in full, 10.3.5 for stars (trees are task #48) |
+| 11 | 11 Containers | [containers.md](containers.md) | **lower bound of Thm 11.0.2 proved** (2^⌊n²/4⌋ triangle-free graphs, exact for every n); the upper bound and §11.1–§11.3 need the container theorem, and every other result there is asymptotic |
+
+## Coverage, measured strictly
+
+`scripts/label_audit.py` counts Zhao's numbered results (`roadmap/labels.txt`, 185 of them:
+every numbered Theorem, Lemma, Corollary and Proposition). A label counts as **proved** only
+when it is named inside a *declaration* docstring — `/-- … -/` immediately before a
+`theorem`/`lemma`/`def` — whose body has no `sorry`. A mention in a module docstring, a
+comment, or anywhere in this roadmap does not count.
+
+```
+labels: 185
+  proved (declaration docstring, no sorry): 105  (56%)
+  statement published, proof open (sorry):  5  T4.3.5 L5.1.6 T8.2.2 T9.4.3 T9.5.11
+  mentioned in Lean, not a declaration:     9  T1.2.2 T1.2.3 T1.2.9 L4.2.4 T5.1.3 T6.2.10 T6.2.11 T10.3.7 T11.1.1
+  absent from Lean:                         66
+
+proved by chapter:
+  ch1: 10/16
+  ch2: 11/13
+  ch3: 4/5
+  ch4: 10/23
+  ch5: 7/10
+  ch6: 15/25
+  ch7: 4/6
+  ch8: 4/9
+  ch9: 14/43
+  ch10: 25/27
+  ch11: 1/8
+```
+
+**The strict definition is the point.** An earlier audit here grepped each label across the
+whole repository and reported **82%**; the strict figure was **54%**. The gap is almost
+entirely this roadmap's own *deferral* lists — §9.4's and §9.5's continuous-geometry entries,
+§4.3, §4.5, §11's research results — where a label appears precisely because it is **not**
+formalized. Two smaller effects run the other way: three of Chapter 1's labels (Sperner
+1.2.2, LYM 1.2.3, Erdős–Ko–Rado 1.2.9) are in Mathlib already, and a few results are proved
+under a different name with the label recorded only here.
+
+Earlier claims in this file of the form "Chapter *n* complete" were about the roadmap's own
+node list for that chapter, not about Zhao's labels; where the two were conflated in
+conversation, the label figure above is the one to trust. Grepping labels measures citations,
+not coverage.
+
+
+## What remains, and what blocks it (2026-09-09)
+
+Of the book's numbered theorem-like results — **185**, not 186: "Theorem 3.4.10" in §4.5 is a
+citation to *Durrett*, not a result of this book, so a label audit that counts it will chase a
+result that does not exist — everything is formalized except the items below. Each is listed
+with the *specific* thing that blocks it, because that is the part worth knowing.
+
+**1. Open published tasks** (the frontier; #42 is claimed, the rest available):
+#42 Janson III, #44 extending a partial injection, #45 log-concavity of `(x!)^{1/x}`,
+#46 Harper, #47 Hoeffding's lemma, #48 Sidorenko for trees, #49 Talagrand,
+#50 threshold monotonicity, #51 balancing vectors, #52 the `Δ*` variance bound,
+#53 the exact partner count.
+
+Downstream of these, and deliberately not attempted here: §4.2/§4.4's second-moment halves and
+Theorem 4.4.3 (need #52), Theorem 8.1.10's `p ≳ n^{-1/2}` regime (needs #53), Theorem 4.6.6 and
+Theorem 9.4.5's unconditional forms (need #46), §9.1/§9.3's unconditional forms (need #47),
+§9.5's median corollaries beyond 9.5.22 (need #49).
+
+**2. Mathlib lacks the theory.**
+* §4.5 (Hardy–Ramanujan, Erdős–Kac) needs **Mertens' theorem** — `∑_{p≤n} 1/p = log log n +
+  O(1)`. Not in Mathlib (checked); formalizing it is its own project.
+* §2.6 (crossing number) needs **planarity** and Euler's formula. Not in Mathlib.
+* §4.5.2/§4.5.4 (CLT, method of moments) are analysis, not combinatorics. **§4.5.1 itself is
+  now published** (`PMC.hardy_ramanujan`) with Mertens' second theorem as an explicit
+  hypothesis — the notes quote Mertens too, so naming it in the type is faithful, and the rest
+  is the second moment method this development already has.
+
+**3. Continuous measure, by design.** §9.4's Euclidean and spherical isoperimetry (9.4.1,
+9.4.10), Johnson–Lindenstrauss (9.4.22) and spherical codes (9.4.25); §9.5's convex-body forms
+(9.5.3, 9.5.6, 9.5.8, 9.5.13, 9.5.14, 9.5.17) — the sample space is finite but the *convex
+body* and Euclidean distance are not, though **Lemma 9.5.12 is now published**
+(`PMC.exists_mem_convexHull_dist_le`), and it is the bridge those five need from Theorem
+9.5.11; §9.6 (Euclidean TSP); §10.2.10
+(Linial–Luria, which randomises over `[0,1]^{C(n,2)}`).
+
+**§5.2 was on this list and should not have been.** "Unit vectors in `ℝⁿ`" reads like
+continuous geometry, but the *randomness* is finite — `2ⁿ` sign patterns — and the geometry is
+one algebraic identity, `⟨v(x), v(y)⟩ = a + (1-a)(1 - 2#(x ∆ y)/n)`. `PMC.exists_nearly_equiangular`
+is proved in the counting framework. That is the fifth deferral overturned on re-examination
+(after FKG, 5.0.5, the compactness step, and §9.2); every one of them was recorded for a
+*structural* reason, and the structural reasons are exactly the ones worth re-checking.
+
+**4. Infinite ground sets — the compactness step is now proved.**
+`PMC.exists_two_coloring_of_finite` assembles finite colourings into a global one for an
+arbitrary vertex set, so §6.2.6's mechanism is in place; what is left of 6.2.6, 6.2.10 and
+6.2.11 is transporting the finite local lemma into it (a task) and, for 6.2.11, the arithmetic
+progressions themselves.
+
+**5. Algorithm semantics.** §6.6 (Moser–Tardos) is about a *procedure* and its expected
+running time.
+
+**6. Research results the notes state without proof.** §4.3's sharp-threshold results —
+Theorem 4.3.6/Lemma 4.3.7 (Bollobás–Thomason, which also wants #50), Friedgut's theorem and
+its Corollary 4.3.15, Theorem 4.3.17 (Achlioptas–Friedgut) — and Theorem 10.4.15
+(Sah–Sawhney–Stoner–Zhao), Theorem 5.1.3 (Spencer), Theorem 8.2.5 (Harel–Mousset–Samotij),
+Theorem 7.2.5 (Riordan–Selby), Theorem 8.3.2 (Bollobás), Theorem 9.3.4 (Shamir–Spencer's
+four-value concentration), and §11's container theorem — whose key counting step the notes
+defer to Morris's lecture notes, which are not available here, so its constants are not
+guessed.
+
+Two theorems are proved *modulo a named hypothesis* rather than a `sorry`, so the missing input
+is visible in the statement: Theorem 6.5.11 (on Theorem 6.5.5's negative dependence) and
+Theorem 4.6.6 (on Harper in a boundary form the ball form does not reach), alongside §9.1's and
+§9.3's dependence on Hoeffding's lemma and §9.5's on Talagrand's.
 
 ## Conventions that shape the route
 
@@ -64,6 +172,31 @@ sorries (`exists_sumFree_subset`, `exists_signs_two_pow_mul_le`) were both close
 PRs. This is worth keeping true: `sorry-delta` is at policy `block`, so any regression is
 caught at the gate, but a `sorry` that never enters is cheaper than one that has to be
 chased out.
+
+### Opening the remaining work to contributors, 2026-09-08
+
+The library is at roughly 2280 build jobs with no custom axioms. Chapters 1 and 7 are
+complete, Chapter 2 but for the deferred §2.6, §6.1–§6.2, Theorem 8.1.1 in both directions,
+and §10.1 with §10.4 entire. But having read the source for essentially everything that
+remains, **each open item is a 300–500 line development**, and Chapter 11 additionally needs
+a restatement decision per theorem because every result there is asymptotic.
+
+That is not work one orchestrator should grind through serially — it is what the protocol's
+contributor sessions are for. So the remaining items are being published as `prove` tasks
+against committed statements, and the statements carry the expensive knowledge rather than
+leaving it to be rediscovered: which components are already proved, the intended proof shape,
+the errata in the source, and the Lean pitfalls already hit.
+
+First batch:
+
+| Issue | Target | Notes carried in the statement |
+|---|---|---|
+| #41 | `PMC.exists_independent_transversal` (Thm 6.3.1) | **since proved directly and closed** |
+| #42 | `PMC.janson_lower_tail` (Thm 8.2.2) | that it bootstraps 8.1.1, and that the work is transporting `pweight`/`badEvent` across `α ⊕ ι` |
+
+Both are `choir/difficulty:hard`. The joining prompt is generated with
+`uv run python -m orchestrator.joining_prompt yidiq7/mit18226-prob-methods`; never compose it
+by hand.
 
 ### Errata found by reading the source, 2026-09-08
 
@@ -351,3 +484,53 @@ with the second calling the first at strictly smaller sets. **The design decisio
 proof turned on: keep everything multiplicative.** The informal argument divides by
 `P(noneOf T)`, which is not known to be positive at that point — positivity is the
 conclusion. No division appears anywhere in the development.
+**2026-09-08 — Theorem 6.4.3 is proved, and the obstacle recorded for it was the wrong
+one.** This roadmap said the combinatorial half of §6.4 — extracting a directed cycle of
+length divisible by `k` — would be the bulk of the work, since Mathlib develops walks and
+cycles for `SimpleGraph` but not for digraphs. **No digraph machinery was needed.** Choosing
+one out-neighbour with the next label at every vertex makes the labelling a successor
+*function*, and a directed cycle is then a periodic orbit; `Function.minimalPeriod` supplies
+it, with distinctness from `Function.iterate_injOn_Iio_minimalPeriod`. The whole half is
+~40 lines.
+
+The lesson is about *what to survey for*. The earlier survey asked whether Mathlib has
+digraph cycles, found no, and recorded a blocker. The right question was whether the object
+the theorem needs is a cycle *in a digraph* or a cycle *of a function* — and the labelling
+hands over a function. **When a survey reports a gap, check that the gap is in the shape the
+proof actually needs**, not in the shape the notes' prose uses.
+
+Two smaller things worth keeping. The notes' hypothesis is *minimum* out-degree `δ`, and
+that cannot be reached by monotonicity from the exactly-`δ` case: the probability bound
+wants the out-degree large while the dependency-degree bound wants it small. It needs the
+edge-deletion reduction (`PMC.exists_cycle_length_dvd_of_le_outdegree`), a step the notes
+leave implicit. And the constant is `Δ + δΔ` where the notes have `δΔ`; that difference is
+the first-pass dependency digraph, and their final trick only shrinks the dependency
+neighbourhood, so it plugs into the same assembly.
+
+**2026-09-09 — A coverage audit against the source, and what it turned up.** Extracting every
+numbered result from the PDF (185 of them) and grepping the roadmap for each label showed 108
+never mentioned. Most are results already proved but recorded by *name* rather than number, or
+remarks and asymptotic statements that were deliberately deferred — but the audit surfaced
+four real items, three of which were then cheap:
+
+* **Corollary 6.1.10** — the `P(Aᵢ) < 1/2`, `∑_{N(i)} P(Aⱼ) ≤ 1/4` form of the local lemma. A
+  short derivation from the asymmetric form at `xᵢ = 2P(Aᵢ)`, needing the Weierstrass product
+  inequality, which is not in Mathlib and is a two-line induction.
+* **Lemma 10.1.5** — `H(X,Y) = H(X) + H(Y)` for independent variables. The §10.1 layer had
+  the chain rule, subadditivity and conditioning bounds but not this.
+* **`PMC.exists_le_wmean`** — "some point is at most the average", which Chapters 1, 2 and 3
+  had each been doing by hand with `Finset.exists_le_of_sum_le`. Now centralised in
+  `Weighted.lean`, where it belonged from the start.
+* **Theorem 8.1.8 (Janson inequality II)** — a genuine gap, and the one that is not cheap: it
+  needs Janson I on a random *subfamily*, which the sampling device in `Weighted.lean` can
+  express but which takes real work to assemble.
+
+**A labelling erratum of my own**, also from the audit: `Janson.lean` cited "Theorem 8.1.1"
+for both bounds. `8.1.1` is the *Setup*; the upper bound is **Theorem 8.1.2** ("Janson
+inequality I") and the lower bound is **Remark 8.1.3**, which the notes get from Harris'
+inequality and which is proved directly here. Fixed.
+
+**The lesson is about how to find gaps.** Chapter-level status lines ("§10.1 complete") hide
+individual missing results, because they are written from what was *done* rather than checked
+against what *exists*. Auditing label by label against the source is the only way to know,
+and it is cheap enough to be worth repeating whenever a chapter is declared finished.

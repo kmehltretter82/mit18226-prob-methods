@@ -77,7 +77,7 @@ theorem wentropy_nonneg {w : Ω → ℝ} (hw : ∀ ω, 0 ≤ w ω) (hsum : ∑ �
   Finset.sum_nonneg fun b _ =>
     Real.negMulLog_nonneg (wdist_nonneg hw X b) (wdist_le_one hw hsum X b)
 
-/-- **The uniform distribution maximises entropy**: `H(X) ≤ log |β|`. -/
+/-- **The uniform distribution maximises entropy** (Zhao, Lemma 10.1.4): `H(X) ≤ log |β|`. -/
 theorem wentropy_le_log_card {w : Ω → ℝ} (hw : ∀ ω, 0 ≤ w ω) (hsum : ∑ ω, w ω = 1)
     (X : Ω → β) : wentropy w X ≤ Real.log (Fintype.card β) := by
   have hΩ : Nonempty Ω := by
@@ -239,7 +239,7 @@ lemma wdist_pair_le_right {w : Ω → ℝ} (hw : ∀ ω, 0 ≤ w ω) (X : Ω →
     simp only [mem_filter, mem_univ, true_and] at hω ⊢
     exact congrArg Prod.snd hω
 
-/-- **Entropy is subadditive**: `H(X, Y) ≤ H(X) + H(Y)` (Zhao, §10.1).
+/-- **Entropy is subadditive**: `H(X, Y) ≤ H(X) + H(Y)` (Zhao, Lemma 10.1.8).
 
 Gibbs' inequality against the product of the marginals. Absolute continuity is automatic
 here: the joint distribution is dominated by each marginal, so a marginal that vanishes
@@ -313,7 +313,7 @@ averaged over the fibres. -/
 noncomputable def wcondEntropy (w : Ω → ℝ) (X : Ω → β) (Y : Ω → γ) : ℝ :=
   ∑ b, wdist w X b * ∑ c, Real.negMulLog (wcondDist w X Y b c)
 
-/-- **The chain rule**: `H(X, Y) = H(X) + H(Y | X)` (Zhao, §10.1).
+/-- **The chain rule**: `H(X, Y) = H(X) + H(Y | X)` (Zhao, Lemma 10.1.7).
 
 Termwise this is Mathlib's `Real.negMulLog_mul`, applied to the factorisation
 `P(X = b, Y = c) = P(X = b) · P(Y = c | X = b)`. The fibres where `P(X = b) = 0` need a
@@ -352,7 +352,7 @@ theorem wentropy_chain {w : Ω → ℝ} (hw : ∀ ω, 0 ≤ w ω) (X : Ω → β
     Finset.sum_congr rfl fun b _ => hfib b, Finset.sum_add_distrib]
   rfl
 
-/-- **Conditioning reduces entropy**: `H(Y | X) ≤ H(Y)`.
+/-- **Conditioning reduces entropy**: `H(Y | X) ≤ H(Y)` (Zhao, Lemma 10.1.10).
 
 Immediate from the chain rule and subadditivity — the two inequalities are the same fact
 read in opposite directions. -/
@@ -361,6 +361,32 @@ theorem wcondEntropy_le {w : Ω → ℝ} (hw : ∀ ω, 0 ≤ w ω) (hsum : ∑ �
   have h1 := wentropy_chain hw X Y
   have h2 := wentropy_pair_le hw hsum X Y
   linarith
+
+
+/-- **Lemma 10.1.5 (independence).** For independent `X` and `Y`,
+`H(X, Y) = H(X) + H(Y)`.
+
+By the chain rule it is enough that conditioning on `X` does nothing: independence makes the
+conditional distribution of `Y` equal to its marginal on every fibre of positive weight, and
+the fibres of weight zero contribute nothing to either side. -/
+theorem wentropy_pair_of_indep {w : Ω → ℝ} (hw : ∀ ω, 0 ≤ w ω) (hsum : ∑ ω, w ω = 1)
+    (X : Ω → β) (Y : Ω → γ)
+    (hindep : ∀ b c, wdist w (fun ω => (X ω, Y ω)) (b, c) = wdist w X b * wdist w Y c) :
+    wentropy w (fun ω => (X ω, Y ω)) = wentropy w X + wentropy w Y := by
+  classical
+  rw [wentropy_chain hw X Y]
+  congr 1
+  rw [wcondEntropy]
+  have hterm : ∀ b : β, wdist w X b * ∑ c, Real.negMulLog (wcondDist w X Y b c)
+      = wdist w X b * wentropy w Y := by
+    intro b
+    rcases eq_or_lt_of_le (wdist_nonneg hw X b) with h | h
+    · rw [← h, zero_mul, zero_mul]
+    · refine congrArg (fun t => wdist w X b * t) ?_
+      refine Finset.sum_congr rfl fun c _ => ?_
+      refine congrArg Real.negMulLog ?_
+      rw [wcondDist, hindep b c, mul_comm, mul_div_assoc, div_self (ne_of_gt h), mul_one]
+  rw [Finset.sum_congr rfl fun b _ => hterm b, ← Finset.sum_mul, sum_wdist, hsum, one_mul]
 
 /-! ### Basic monotonicity, and entropy as a function of the fibres -/
 
@@ -510,8 +536,8 @@ theorem sum_choose_mul_pow_le {n k : ℕ} (hk : k ≤ n) {x : ℝ} (hx0 : 0 ≤ 
           omega
         exact Finset.sum_le_sum_of_subset_of_nonneg hsub fun i _ _ => by positivity
 
-/-- **The binomial tail bound at its optimal `x`**, which is the entropy bound in algebraic
-form: for `0 < k` and `2k ≤ n`,
+/-- **The binomial tail bound at its optimal `x`** (Zhao, Theorem 10.1.12), which is the
+entropy bound in algebraic form: for `0 < k` and `2k ≤ n`,
 
 `∑_{i ≤ k} C(n,i) ≤ (n/k)^k · (n/(n-k))^(n-k)`.
 
@@ -771,7 +797,7 @@ theorem wentropy_shearer_triple {w : Ω → ℝ} (hw : ∀ ω, 0 ≤ w ω) (hsum
   have hadd := wentropy_pair_le hw hsum X (fun ω => (Y ω, Z ω))
   linarith
 
-/-- **Conditioning on more reduces entropy**: `H(Y | X, Z) ≤ H(Y | X)`.
+/-- **Conditioning on more reduces entropy**: `H(Y | X, Z) ≤ H(Y | X)` (Zhao, Lemma 10.1.10, general form).
 
 Submodularity, re-read through the chain rule. This is the step Shearer's induction takes
 for each coordinate. -/

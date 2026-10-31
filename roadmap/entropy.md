@@ -59,7 +59,17 @@ distribution, and `PMC.wentropy w X = ∑ b, negMulLog (P (X = b))` is its entro
 | **`PMC.loomis_whitney`** — Thm 10.4.3 | proved |
 | **`PMC.loomis_whitney_general`** — Cor 10.4.6 | proved |
 | **`PMC.card_orderedTriangles_sq_le`** — the triangle bound | proved |
-| Further applications (Bregman, Kahn) | open |
+| `PMC.shearer_subset` — Shearer for a sub-tuple | proved |
+| `PMC.wentropy_add_wmean_le_log_sum_exp` — Gibbs variational principle | proved |
+| `PMC.tupleEntropy_union_le` — block subadditivity | proved |
+| `PMC.wcondEntropy_masked_antitone` — `H(X_i\|X_T) ≤ H(X_i\|X_S)` | proved |
+| `PMC.condProd`, `PMC.sum_condProd` — conditionally independent copies | proved |
+| **`PMC.card_matchSet_le_prod`** — Brégman, Thm 10.2.1 | proved |
+| **`PMC.card_indepSets_pow_le`** — Kahn–Zhao, Thm 10.4.12 | proved |
+| `PMC.mul_tupleEntropy_univ_le` — the bipartite entropy skeleton | proved |
+| `PMC.wcondEntropy_congr_left` — `H(Y\|Z)` depends only on `Z`'s fibres | proved |
+| `PMC.card_kddHom` — `hom(K_{d,d},H) = ∑_a #commonNbhd(a)^d` | proved |
+| **`PMC.card_homSetR_pow_le`** — Galvin–Tetali, Thm 10.4.14 | proved |
 
 ## The one trap: `log 0 = 0`
 
@@ -192,12 +202,226 @@ Two things:
 
 
 
+## §10.2 — the random-order machinery is in place
+
+`ProbMethods/RandomOrder.lean`. Radhakrishnan's proof of Brégman–Minc reveals the rows in a
+uniformly random order, and its one distributional input is the step the notes leave as an
+exercise ("(Why?)"): for a fixed row, the number of *greedily available* choices is uniform
+on `{1, …, d}`.
+
+Stripped of the setting, that is a fact about a uniformly random permutation `τ` and a fixed
+`S`: the **rank** of `i ∈ S` — how many members of `S` are revealed at or after `i` — is
+uniform on `{1, …, #S}` (`PMC.wprob_tauRank_eq`). Two observations give it:
+
+* `PMC.card_filter_tauRank_eq_one` — for each `τ`, *exactly one* member of `S` has rank `k`;
+  the rank is a bijection from `S` onto `{1, …, #S}`, by strict monotonicity.
+* `PMC.card_filter_tauRank_congr` — the ranks are equidistributed across the members of `S`,
+  since right-multiplying `τ` by `Equiv.swap i i'` exchanges their roles and preserves `S`.
+
+Summing the first over `i ∈ S` and applying the second gives `#S` classes of equal size.
+
+**This needs no order machinery, and that was the design choice worth making.** The obvious
+route — pick out the `k`-th smallest element of `τ(S)` and swap it into place — needs
+`Finset.orderIsoOfFin` and sorted lists; double counting needs only a transposition. The
+`LinearOrder` is used only to *say* what "revealed after" means.
+
+`PMC.wmean_log_tauRank` then gives Brégman's per-row bound `E[log(rank)] = log(d!)/d`. It is
+stated through `PMC.wmean_comp_tauRank`, which takes an arbitrary `f`, because the
+distribution and not the function is the content.
+
+Checked numerically on `Fin 3`: uniform over the three ranks with two orders each, and on the
+proper subset `{0,2}`, two ranks with three orders each.
+
+### The other two entropy inputs are proved
+
+* `PMC.wcondEntropy_le_sum_log_card` (`CondSupport.lean`) — **conditional entropy is at most
+  the expected log of the conditional support**: if `Y ω ∈ T (X ω)` always, then
+  `H(Y | X) ≤ ∑_b P(X = b) log #(T b)`. This is the step that turns entropy back into
+  counting; in the application `T b` is the set of columns still free for a row once the
+  earlier rows are known. It rests on `PMC.sum_negMulLog_le_log_card`, the same fact stated
+  for a bare *distribution* — which is what makes it reusable here, since a conditional
+  distribution is a `PMC.wcondDist` with no underlying map to speak of. Fibres of probability
+  zero contribute nothing to either side, so there is no side condition.
+
+* `PMC.tupleEntropy_univ_eq_sum_predSet` (`OrderChain.lean`) — **the chain rule along an
+  arbitrary order**: for every permutation `τ`,
+  `H(X_univ) = ∑ᵢ H(Xᵢ | X_{predecessors of i})`. A telescoping sum over the prefixes of `τ`
+  (`Finset.sum_range_sub`), reindexed by `τ.symm`, on top of `PMC.tupleEntropy_insert`
+  (adding one coordinate to a mask adds exactly that coordinate's conditional entropy).
+
+That identity holding for *every* order is the structural half of Radhakrishnan's proof; the
+probabilistic half is averaging over a random one.
+
+### Theorem 10.2.1 (Brégman–Minc) — proved
+
+`PMC.card_matchSet_le_prod` (`Chapter10/Bregman.lean`): a `0-1` matrix whose `i`-th row has
+`dᵢ` ones has permanent at most `∏ᵢ (dᵢ!)^{1/dᵢ}`.
+
+The assembly, in the order it was built:
+
+1. `PMC.card_avail_eq_tauRank` — **the combinatorial identity the notes leave implicit.** The
+   columns of row `i` not yet taken correspond, via `σ⁻¹`, to the members of `PMC.hitSet` that
+   `τ` reveals at or after `i`: each one of row `i` sits in the column `σ j` for exactly one
+   row `j`, and it is still available precisely when that `j` has not been revealed. This is
+   what makes the abstract rank lemma applicable to a matrix.
+2. `PMC.tupleEntropy_matchCoord_univ` — `H(σ) = log (per A)`, since a uniform matching is
+   determined by its coordinates. The no-matchings case is separate; there both sides are `0`.
+3. `PMC.log_card_matchSet_le` — the bound for one *fixed* order: chain rule along `τ`, then
+   each conditional entropy bounded by the log of the free columns.
+4. `PMC.log_card_matchSet_le_sum_log_factorial` — average over `τ`, exchanging the two
+   expectations with `Finset.sum_comm`.
+
+**The point of the whole proof, in one line**: bounding each conditional entropy by `log dᵢ`
+— the naive worst case, which the notes flag as "too lossy" — would give
+`per A ≤ ∏ dᵢ`; revealing in a random order replaces `log dᵢ` by the *average* of
+`log 1, …, log dᵢ`, which is `log(dᵢ!)/dᵢ`.
+
+**Checked against the equality cases**, which is the strongest evidence available that the
+constant is right, since a mis-stated exponent would break them: the all-ones `3×3` matrix has
+`per = 6 = ∏ (3!)^{1/3}`, a permutation matrix has `per = 1 = ∏ (1!)^{1}`, and the `2+1`
+block-diagonal matrix has `per = 2 = (2!)^{1/2}(2!)^{1/2}·1`. A strict case was checked too
+(rows `{0,1}, {0}` on `Fin 2`: `per = 1 < √2`).
+
+### Corollary 10.2.2, bipartite case — proved
+
+`PMC.card_matchSet_sq_le_prod`: for a bipartite graph,
+`pm(G)² ≤ ∏_{x ∈ X} (d_x!)^{1/d_x} · ∏_{y ∈ Y} (d_y!)^{1/d_y}`, i.e.
+`pm(G) ≤ ∏_v (d_v!)^{1/(2d_v)}` over all `2n` vertices. Brégman applied to each side in
+turn, which needs the permanent to be transpose-invariant — that is the inversion `σ ↦ σ⁻¹`
+(`PMC.card_matchSet_colOf`, checked on an asymmetric example).
+
+### Theorem 10.2.6's Brégman step — proved; its asymptotic form is not
+
+`PMC.card_hamCycleSet_le_prod`: the number of Hamilton cycles of a tournament is at most
+`∏ᵢ (dᵢ!)^{1/dᵢ}`, with `dᵢ` the out-degree. In this encoding the notes' first inequality —
+a Hamilton cycle *is* a `1`-factor — is literally a subset relation, so the content is
+Brégman. Checked on the cyclic tournament on `Fin 3` (`per = 1`, bound `1`, equality) and the
+transitive one (`per = 0`, since the sink has out-degree `0`).
+
+**Theorems 10.2.6 and 10.2.4 themselves are not claimed.** Reaching `O(√n · n!/2ⁿ)` needs
+log-concavity of `x ↦ (x!)^{1/x}` — which the notes state as "One can check (omitted)" — plus
+a smoothing argument over degree sequences of total `C(n,2)`, and Stirling. That is an
+analysis project, not a missing line, so the log-concavity is published as a task
+(`PMC.factorial_rpow_log_concave`).
+
+**Erratum (Theorem 10.2.6's omitted step).** The notes write "the function `g(x) = (x!)^{1/x}`
+is log-concave, i.e., `g(n) g(n+2) ≥ g(n+1)²` for all `n ≥ 0`". The displayed inequality is
+log-*convexity* and is **false for every `n ≥ 1`**: at `n = 1` it reads `1 · 6^{1/3} ≥ 2`,
+i.e. `1.817 ≥ 2`. The word is right and the inequality is flipped. Checked numerically for
+`n` up to 4000: the notes' direction fails at every `n ≥ 1`, and the concave direction holds
+at every `n ≥ 1`, failing only at `n = 0` — where `(0!)^{1/0}` is a convention artifact, so
+the committed statement carries `1 ≤ m`. The smoothing argument needs the concave direction,
+so this is a typo rather than a hole in the proof.
+
+**Only the bipartite case of Corollary 10.2.2 is claimed, and that is deliberate.** The notes derive the general
+statement from `pm(G ⊔ G) ≤ pm(G × K₂)`, which they leave as an exercise — and that
+inequality, not the appeal to Brégman, is the actual content of Kahn–Lovász. Formalizing the
+general case means proving that exercise, which is a separate combinatorial project.
+
+<!-- superseded plan -->
+**The former plan for Theorem 10.2.1** was: take `σ` uniform on the permutations
+compatible with the matrix, so `PMC.wentropy_uniform_of_injective` gives
+`H(σ) = log (per A)`; apply the order chain rule for each fixed `τ`; bound each conditional
+term by `PMC.wcondEntropy_le_sum_log_card` with `T` the free columns; then average over `τ`
+and use `PMC.wmean_log_tauRank` for the per-row `log (dᵢ!)/dᵢ`, exchanging the two
+expectations with `Finset.sum_comm`.
+
 * **§10.2** — Theorem 10.2.1 (Brégman–Minc): `per A ≤ ∏ (dᵢ!)^{1/dᵢ}` for a 0–1 matrix with
   row sums `dᵢ`. **Harder than anything in §10.4**, and worth knowing why before starting:
   Radhakrishnan's proof reveals the chosen entries in a *uniform random order*, so it needs
   conditional entropy over a random permutation of the rows — a second layer of randomness
   on top of the permutation being counted — and the statement carries real exponents
   `1/dᵢ`.
+## §10.3 — Theorem 10.3.3 (Blakey–Roy) is proved
+
+`ProbMethods/Chapter10/Sidorenko.lean`. `PMC.sidorenko_path3`: for every graph `G` on `n`
+vertices with `m` edges, `hom(P₄, G) · n² ≥ (2m)³`, i.e. `t(P₄, G) ≥ t(K₂, G)³`
+(`PMC.sidorenko_path3_density`) — Sidorenko's conjecture for the three-edge path.
+
+**The notes' entropy proof is carried out with no conditional-entropy machinery at all.**
+Writing the walk distribution's entropy out explicitly, the argument reduces to exactly two
+applications of **Gibbs' inequality** (`PMC.sum_mul_log_div_le`, already in §10.1):
+
+* `PMC.sum_log_div_card_le_log_sum_div_card` — Jensen for `log`, i.e. AM–GM, from Gibbs
+  against the uniform distribution on the directed edges. This converts
+  `hom(P₄, G) = ∑_{(y,z)} d(y)d(z)` (`PMC.card_walk3`, fibred over the middle edge) into
+  `∑_v d(v) log d(v)`.
+* `PMC.sum_degree_mul_log_degree_ge` — `∑_v d(v) log d(v) ≥ 2m log(2m/n)`, from Gibbs against
+  the uniform distribution on vertices with `P(v) = d(v)/2m`. This is the notes'
+  `H(X) ≤ log n` step in counting form.
+
+That both steps are the *same lemma* is the thing worth recording. Gibbs' inequality **is**
+the entropy inequality, so a proof that uses only Gibbs is the entropy proof — just written
+out, without needing conditional independence, `H(Z|X,Y) = H(Z|Y)`, or a four-variable chain
+rule. Had the argument gone through conditional entropies it would have needed a
+conditional-independence lemma the library does not have.
+
+**Checked on `K₃`, where the bound is attained**: `6` directed edges, `24` walks, and
+`6³ = 216 = 24 · 3²`. Equality for regular graphs is the right behaviour — the conjecture says
+the random graph is the minimiser.
+
+### Theorem 10.3.6's case `F = K₂,₂` — proved, by Cauchy–Schwarz
+
+`PMC.sidorenko_C4`: `hom(C₄, G) · n⁴ ≥ (2m)⁴`, i.e. `t(C₄, G) ≥ t(K₂, G)⁴`. Grouping a
+`C₄`-homomorphism by its pair of *opposite* vertices gives `hom(C₄, G) = ∑_{a,c} N(a,c)²`
+with `N` the codegree (`PMC.card_walk4`), and `∑ N(a,c) = ∑_v d(v)²` (`PMC.sum_codeg`), so
+two applications of `sq_sum_le_card_mul_sum_sq` — over the `n²` pairs, then over the `n`
+vertices — give the bound.
+
+**This deviates from the notes deliberately.** Their entropy proof of the `K₂,₂` case needs a
+conditional-independence step the library does not have, while Cauchy–Schwarz needs nothing
+new. The statement is theirs; only the route differs, and the roadmap says so rather than
+implying the entropy proof was formalized.
+
+Checked on `K₃`: `hom(C₄, K₃) = 18 = tr(A⁴)`, and `6⁴ = 1296 ≤ 18 · 81`.
+
+### Theorem 10.3.5 for stars — proved, and it locates the difficulty
+
+`PMC.sidorenko_star`: `hom(K₁,ₜ, G) · n^{t-1} ≥ (2m)^t`. A star-homomorphism is a centre
+together with `t` independent neighbours of it, so `hom(K₁,ₜ, G) = ∑_v d(v)^t`
+(`PMC.card_starHom`), and the inequality is then exactly the power-mean inequality
+`pow_sum_div_card_le_sum_pow`. Checked on `K₃` at `t = 2`: `36 = 12 · 3`, equality.
+
+Stars are trees, so this is an infinite family of cases of Theorem 10.3.5 — and it is worth
+recording next to the harder ones because it **locates the difficulty**: the obstacle in
+Sidorenko's conjecture is not trees with a single branch vertex, where the count factorises
+outright, but the ones whose entropy bookkeeping needs a genuine chain rule along the tree.
+
+### Theorem 10.3.6 in full — proved
+
+`PMC.sidorenko_biclique`: `hom(K_{s,t}, G) · n^{2st-s-t} ≥ (2m)^{st}` for **all** `s, t`. The
+notes demonstrate `K₂,₂` and remark that the same proof extends; with the star case in hand
+the extension needs no entropy at all —
+
+    hom(K_{s,t}, G) = ∑_{a ∈ Vˢ} N(a)^t ≥ (∑_a N(a))^t / (nˢ)^{t-1}     [power mean]
+    ∑_a N(a) = ∑_b d(b)ˢ ≥ (2m)ˢ / n^{s-1}                              [the star case]
+
+and multiplying out gives the exponent. Parametrising by `s+1`, `t+1` keeps every exponent a
+genuine natural number, with no truncated subtraction. **This subsumes both earlier cases**:
+`s = t = 1` is `C₄` and `s = 0` is the star. Checked on `K₃`, where the `(2,2)` count is `18`,
+agreeing with the closed-4-walk count as it must since `C₄ = K₂,₂`.
+
+### The conditional-independence tool now exists
+
+`PMC.wcondEntropy_pair_eq_of_condIndep`: if the conditional distribution of `X` given
+`(Y, Z)` depends only on `Y`, then `H(X | Y, Z) = H(X | Y)`. This is the step the notes invoke
+as "[cond indep]", and the one whose absence was recorded twice above as the reason for taking
+Cauchy–Schwarz routes instead.
+
+The proof is a regrouping, not an inequality: the fibres of `(Y, Z)` above a fixed `Y`-value
+all carry the same conditional distribution, so their weights collapse onto the marginal of
+`Y` (`PMC.sum_wdist_pair_right`).
+
+**What this does and does not unblock.** The gap in the *library* is closed. Each application
+still has to verify the hypothesis for its own distribution, and for trees that means
+building the tree-indexed Markov distribution and proving its marginals are degree-biased —
+which is the remaining work in Theorem 10.3.5, not the entropy identity.
+
+What remains in §10.3: Theorem 10.3.5 in full (all trees — the same argument, but the entropy
+bookkeeping is over a tree rather than a path, so it does need the conditional-independence
+step), Theorem 10.3.6 (complete bipartite), and Theorem 10.3.7. Remark 10.3.8's Möbius graph
+is an open case of the conjecture and is not a node.
+
 * **§10.3** — Sidorenko's inequality, about homomorphism densities. Note Remark 10.3.8: the
   Möbius graph `K₅,₅ ∖ C₁₀` is the smallest open case, so part of the section is an open
   problem rather than something to formalize.
@@ -428,3 +652,178 @@ Two routes that should work, in order of preference:
 
 Route 1 is worth doing regardless of 10.4.9: it removes a hypothesis no application should
 have to satisfy.
+
+## §10.2 — Lemma 10.2.7, Hamilton paths into Hamilton cycles
+
+`ProbMethods/Chapter10/HamCycles.lean`. `PMC.exists_orientation_hamiltonPaths_le_hamCycles`:
+an `(m+1)`-vertex tournament with `P` Hamilton paths extends by one vertex to a tournament
+with at least `P/4` Hamilton cycles, stated as `P ≤ 4 · #cycles`. With Szele's theorem this
+gives Theorem 10.2.4's lower bound, `PMC.exists_tournament_factorial_le_hamCycles`:
+
+    (m+1)! ≤ 4 · #cycles · 2^m   for some (m+2)-vertex tournament.
+
+**`2 ≤ n` is necessary, not cosmetic.** The notes' proof closes each Hamilton path up through
+the new vertex, which happens with probability `1/4` because the path's two ends are
+*distinct*. For a one-vertex path the two constraints are on the same edge and the
+probability is `0` — and indeed a `2`-vertex tournament has a Hamilton path and no Hamilton
+cycle, so the lemma as stated fails at `n = 1`.
+
+**Counting cycles without dividing by `n`.** A cycle recorded as a cyclic ordering is counted
+`n` times, once per starting point, and correcting for that would put a division in the
+statement. Instead `PMC.hamCycles` counts the orderings that start at a *fixed* vertex — the
+newly added one — which is an honest count of the directed Hamilton cycles because each
+passes through that vertex exactly once. The construction `PMC.cycleOf` then closes a path up
+by placing the new vertex first, and injectivity is immediate: the ordering is the cycle read
+from the new vertex.
+
+The averaging is a double count of orientation/path pairs rather than an expectation:
+`PMC.card_closingOrients_mul` says exactly `2^{n-2}` of the `2^n` orientations close a given
+path (two edges constrained in opposite directions, via the public
+`PMC.card_filter_agree_mul` from §2.1), so `4 ∑_o #{paths o closes} = P·2^n`, and the largest
+term is at least the mean.
+
+Checked by evaluation: the `3`-cycle has `3` Hamilton paths and `1` Hamilton cycle, the
+transitive `3`-vertex tournament has `1` and `0`, and the double count is *exact* in both
+cases — `∑_o #cycles(extend t o)` is `6 = 3·2³/4` and `2 = 1·2³/4`.
+
+## §10.4 — Lemma 10.4.13, the bipartite swapping trick
+
+`ProbMethods/Chapter10/Swapping.lean`. `PMC.card_indepSets_sq_le_card_indepCover`:
+`i(G)² ≤ i(G × K₂)`, unconditionally.
+
+This is what reduces Kahn–Zhao (Theorem 10.4.12) from all `d`-regular graphs to the bipartite
+ones, and **unlike the rest of §10.4 it is not an entropy argument** — the notes give an
+explicit injection, and this formalises it:
+
+* `i(2G) = i(G)²`, so it suffices to inject `I(2G) → I(G × K₂)`.
+* `PMC.crossing_slice` — the bad edges are *bipartite*, witnessed by the copy-`0` slice, so a
+  crossing set exists at all.
+* `PMC.swapSet_mem_indepCover` — swapping along a crossing set repairs every bad edge. Four
+  cases: two put two vertices of `S` in the *same* copy, contradicting independence in `2G`;
+  the other two give a bad edge with both endpoints on one side of `A`, contradicting
+  crossing.
+* `PMC.sameEdge_swapSet` and `PMC.crossing_iff_crossingT` — **the image remembers the bad
+  edges**, hence the whole crossing family, hence the canonical choice made from it.
+
+The design point worth recording: the canonical crossing set is `PMC.pickMin`, **a function of
+the crossing family alone** (least index under a fixed indexing of the subsets of `V`). The
+notes say "fix an arbitrary order on all subsets"; what the injectivity argument actually
+needs is that the choice depend on nothing but the family, since that family is what the image
+reveals.
+
+Both products are given as *relations* on `V × Bool` rather than `SimpleGraph` structures:
+independence only ever needs the relation, so there are no `symm` or `loopless` obligations.
+
+Checked: equality at `K₂` (`9 = 3²`, the cover being two disjoint edges — not a 4-cycle) and
+strict at `K₃` (`16 ≤ 18`, the cover being a 6-cycle).
+
+## §10.4 — Theorem 10.4.12, Kahn–Zhao
+
+`ProbMethods/Chapter10/KahnZhao.lean`. `PMC.card_indepSets_pow_le`: for every `n`-vertex
+`d`-regular graph,
+
+    i(G)^(2d) ≤ (2^(d+1) - 1)^n.
+
+The notes state it as `i(G) ≤ i(K_{d,d})^{n/(2d)}`; the fractional exponent is an artifact of
+taking logarithms, and cleared of it the theorem is a statement about natural numbers, which
+is how it is stated here. Nothing is lost — the two are equivalent by monotonicity of `log`,
+and the `ℕ` form is what a later application would want to chain with.
+
+**Bipartite case** (`PMC.card_indepR_pow_le_of_bipartite`), Kahn's entropy argument, with
+`X` the indicator tuple of a uniformly random independent set:
+
+* `d·H(X) = d·H(X_A) + d·H(X_B | X_A)` — chain rule, in the block form
+  `PMC.tupleEntropy_union_le`, which also gives `H(X_B|X_A) ≤ ∑_{b ∈ B} H(X_b|X_A)`.
+* `d·H(X_A) ≤ ∑_{b ∈ B} H(X_{N(b)})` — Shearer. The covering multiplicity *is* regularity:
+  a vertex `a ∈ A` lies in `N(b)` for exactly its `d` neighbours `b`. This needed a new form
+  of the lemma, `PMC.shearer_subset`, because the vertices of `B` lie in none of the `N(b)`
+  and so are covered zero times.
+* `H(X_b|X_A) ≤ H(X_b|X_{N(b)})` — `PMC.wcondEntropy_masked_antitone`.
+* one inequality per `b ∈ B`: `H(X_{N(b)}) + d·H(X_b|X_{N(b)}) ≤ log (2^{d+1} - 1)`.
+
+**The per-vertex step is where this proof departs from the notes.** The notes introduce `d`
+conditionally independent copies of `X_b` given `X_{N(b)}` and read the left side as
+`H(X_b^{(1)}, …, X_b^{(d)}, X_{N(b)})`, bounded by `log i(K_{d,d})` because that tuple *is*
+an independent set of `K_{d,d}`. The route taken here bounds the same quantity by an entropy
+maximisation:
+
+* `X_b` is determined unless `X_{N(b)}` is all-`false`, so `H(X_b|X_{N(b)}) ≤ P(0)·log 2`
+  (`PMC.wcondEntropy_indepInd_le`);
+* `H(X_{N(b)}) + d·log 2·P(0) ≤ log (2^d + (2^d - 1))` by the Gibbs variational principle
+  `PMC.wentropy_add_wmean_le_log_sum_exp`, at the energy giving the all-`false` mask weight
+  `2^d` and each of the other `2^d - 1` masks weight `1`.
+
+The maximum is `2^{d+1} - 1 = i(K_{d,d})`, as it has to be: the extremal distribution of a
+Gibbs bound is the Gibbs measure, which here is the uniform independent set of `K_{d,d}`. The
+constant arrives with a reason attached rather than by exhibiting the extremal graph.
+
+`PMC.condProd` (`Chapter10/CondCopies.lean`) builds the copies construction anyway — it is
+what the notes' own §10.3 proofs use, and it is the right object to have — but Kahn–Zhao does
+not need it.
+
+**General case**: the double cover is bipartite and `d`-regular
+(`PMC.card_nbrs_coverAdj`), Kahn's case applies to it, and the swapping trick transfers the
+bound back: `i(G)^{2d} = (i(G)²)^d ≤ i(G × K₂)^d ≤ (2^{d+1}-1)^n`.
+
+Checked by brute force over every regular graph on at most 6 vertices: no violations, and the
+equality cases are exactly the disjoint unions of `K_{d,d}` (`n=2,d=1`; `n=4,d=1`;
+`n=4,d=2` — that is `C₄ = K_{2,2}`, `i = 7`; `n=6,d=1`; `n=6,d=3` — `K_{3,3}`, `i = 15`),
+which is what the theorem predicts.
+
+## §10.4 — Theorem 10.4.14, Galvin–Tetali
+
+`ProbMethods/Chapter10/GalvinTetali.lean`. `PMC.card_homSetR_pow_le`: for a `d`-regular
+bipartite `G` and **any** target `H`, loops allowed,
+
+    hom(G, H)^d ≤ hom(K_{d,d}, H)^{#B}.
+
+The notes state this and say only that "the entropy proof of the bipartite case of Theorem
+10.4.12 extends". It does, and the extension cost almost nothing here because the global part
+of Kahn's proof was first separated out as `PMC.mul_tupleEntropy_univ_le` — Shearer on the
+side `A`, chain rule and block subadditivity on the side `B`, with a per-vertex bound as a
+hypothesis. Galvin–Tetali is that skeleton with a different per-vertex bound, and nothing
+else changes.
+
+**The per-vertex bound, and where the constant comes from.** The notes take `d`
+conditionally independent copies of `X_b` given `X_{N(b)}` and observe the resulting tuple is
+a homomorphism of `K_{d,d}`. Here it is the Gibbs variational principle again, and this time
+the target constant is not put in by hand but *computed*:
+
+* `X_b` must lie in the common neighbourhood of the values on `N(b)`, so
+  `H(X_b | X_{N(b)}) ≤ E[log #commonNbhd(X_{N(b)})]`;
+* `PMC.wentropy_add_wmean_le_log_sum_exp` at the energy `a ↦ d·log #commonNbhd(a)` bounds the
+  whole left side by `log ∑_a #commonNbhd(a)^d`;
+* and `∑_a #commonNbhd(a)^d` **is** `hom(K_{d,d}, H)` (`PMC.card_kddHom`): a homomorphism of
+  `K_{d,d}` is a tuple on one side plus `d` independent choices from its common
+  neighbourhood.
+
+So the extremal graph appears as the partition function of the maximisation rather than as an
+example to be checked. This is the same phenomenon as `2^{d+1} - 1 = i(K_{d,d})` in Kahn's
+case, which is now visibly the instance `H = ` one edge with a loop.
+
+**Two things worth recording about the formalization.**
+
+*The degenerate tuples must be excluded from the partition function.* `Real.log 0 = 0` makes
+`exp (d log #commonNbhd a) = 1` where `#commonNbhd a ^ d = 0`, so summing the energy over
+*all* tuples would inflate the partition function above `hom(K_{d,d},H)` and break the
+inequality. Restricting to the tuples with nonempty common neighbourhood is free, since an
+attained tuple always has `X_b` in its common neighbourhood — but it is not optional.
+
+*The conditioning variable is re-presented, not re-derived.* The per-vertex bound wants
+`X_{N(b)}` as a function `Fin d → V(H)` (so that the partition function is a sum over tuples),
+while the skeleton produces it as a mask `V → Option V(H)`. `PMC.wcondEntropy_congr_left` —
+new, and the conditional analogue of `PMC.wentropy_congr` — says conditional entropy depends
+only on the fibres of the conditioning variable, which lets an enumeration of `N(b)` move
+between the two presentations with no probability recomputed.
+
+**Checked**: brute force over every symmetric relation with loops on up to 3 vertices as the
+target, against `2K₂`, `C₄`, `C₆`, `K₂,₂` and `K₃,₃` as the host: no violations, equality at
+`K_{d,d}` itself. And the specialisation is checked *in Lean*: `PMC.card_homSetR_indepTarget`
+and `PMC.card_kddHom_indepTarget` turn Theorem 10.4.14 at the independent-set target back into
+the statement of `PMC.card_indepR_pow_le_of_bipartite`, which the file records as a
+kernel-checked `example`. `PMC.card_properColorings_pow_le` is the other special case the
+notes name, `c_q(G)^d ≤ c_q(K_{d,d})^{#B}`.
+
+**What remains in §10.4**: Theorem 10.4.15 (Sah–Sawhney–Stoner–Zhao 2020), which removes the
+bipartite hypothesis for `H = K_q`. The notes state it without proof — it is a research paper,
+not an argument in the book — so it is not a node here.

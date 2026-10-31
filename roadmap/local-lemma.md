@@ -110,6 +110,55 @@ is `Finset V` under the uniform weight, and `PMC.monoEvent edge i` is the event 
   `2` times the free coordinates. Checked numerically at `(n,k) = (4,2)` and `(5,3)`, both
   giving `8`.
 
+### §6.2 — the non-uniform criterion (Theorem 6.2.4) — done
+
+`PMC.exists_two_coloring_of_weight_sum`: a hypergraph all of whose edges have at least
+three vertices is 2-colourable as soon as
+
+    ∑_{f ≠ e, f ∩ e ≠ ∅} 2^(-#f) ≤ 1/8   for every edge e.
+
+`PMC.lovasz_local_lemma_quarter` (Corollary 6.1.10) at the monochromatic events: `#e ≥ 3`
+gives `P(A_e) = 2^{1-#e} ≤ 1/4 < 1/2`, and the hypothesis gives
+`∑_{f ∈ N(e)} P(A_f) = 2 ∑ 2^{-#f} ≤ 1/4`.
+
+This needed `PMC.wprob_monoEvent`, the *exact* probability `2^{1-#e}` rather than the `≤`
+bound the symmetric application uses — the point of the criterion is that it sums
+probabilities over neighbours of **different sizes**, which is the notes' Remark 6.2.5: the
+sign to look past the symmetric local lemma is bad events of very different probabilities.
+
+Sanity check on how much it buys: for a 3-uniform hypergraph the hypothesis reads
+`#N(e) ≤ 1`, where the symmetric form (Theorem 6.2.1) needs `e(d+1)/4 ≤ 1`, i.e. `d = 0`.
+
+One deliberate difference from the notes: the sum here is over *indices* `j ≠ i` rather than
+over distinct edges, so two indices carrying the same edge set are counted twice. That makes
+the hypothesis stronger than the notes' and the theorem no weaker, and it keeps the indexed
+convention the rest of the file uses.
+
+### §6.2 — the compactness step (Theorem 6.2.6) — proved
+
+`ProbMethods/Chapter06/Compactness.lean`. `PMC.exists_two_coloring_of_finite`: for a family of
+**finite** edges on an **arbitrary** vertex set, if every finite set of vertices carries a
+colouring good on the edges inside it, then some colouring is good on every edge. Both `V` and
+the index type are arbitrary — no cardinality hypothesis anywhere, which is the point.
+
+`V → Bool` is compact (Tychonoff), the good sets are closed — "edge `i` is bichromatic" is the
+*finite* union over pairs `u, v ∈ edge i` of `{c | c u ≠ c v}`, each a preimage of a set in a
+discrete space under a continuous evaluation — the family is directed downwards, and each member
+is nonempty by hypothesis. Every edge lies inside some finite `X`, namely its own vertex set, so
+a member of the intersection is a global colouring.
+
+**This was recorded as blocked on "compactness over infinite ground sets", which Mathlib turns
+out to supply directly**: `IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed`
+and the `Pi` compact-space instance. That is now the *third* deferral in this project that
+Mathlib had already answered (FKG, Theorem 5.0.5, this) — the pattern is that structural
+reasons to give up are the ones worth checking.
+
+What remains of Theorem 6.2.6 as literally stated is transport of the finite half into the
+compactness step, which is bookkeeping and is published as a task: restricting to `↥X` and
+`{i // edge i ⊆ X}` (finite, because at most `d+1` indices carry any one edge and there are at
+most `2^{#X}` edges inside `X`), carrying edges across with `Finset.subtype`, and turning the
+returned `Finset V` into a colouring. The file's docstring records the route step by step.
+
 ### §6.2 — done
 
 `PMC.exists_two_coloring_of_local_lemma`: a `k`-uniform hypergraph in which every edge
@@ -134,6 +183,29 @@ The assembly took four supporting pieces, all reusable for §6.3–§6.4:
 theorem is not true-by-empty-hypotheses. Worth doing for any statement whose hypotheses are
 a numeric inequality — a mis-stated constant turns the whole result into a tautology, and
 nothing in the gate would catch it.
+
+### §6.2's other numbered results, from the coverage audit
+
+* `PMC.exists_two_coloring_of_local_lemma'` is **Theorem 6.2.6** in the finite case: edges of
+  size *at least* `k` rather than exactly `k`. The generalisation cost nothing — an edge of
+  size `m ≥ k` is monochromatic with probability `2^{1-m} ≤ 2^{1-k}`, and the symmetric local
+  lemma only ever wanted an upper bound. Theorem 6.2.1 is now the uniform corollary. The
+  notes also state 6.2.6 for *infinite* vertex sets, which needs their compactness Lemma
+  6.2.7. **That lemma is now proved in the generality the notes state it** —
+  `PMC.exists_avoid_all_of_avoid_finite` (`ProbMethods/Chapter06/AvoidEvents.lean`): variables
+  with finitely many choices each, possibly infinitely many events, each depending on a finite
+  set of variables; avoiding every finite subset of events implies avoiding all of them.
+  Tychonoff on `∀ i, C i` with discrete finite factors, plus the directed-intersection lemma.
+  The step that needs the variable model is that each bad set is *clopen*, because `bad j`
+  factors through the restriction to the finite `dep j`; that is precisely what Remark 6.2.8
+  warns is missing in general. `PMC.exists_two_coloring_of_finite` is the `C i = Bool` case,
+  and `PMC.exists_two_coloring_of_avoid` re-derives it from the general lemma.
+* `PMC.exists_two_coloring_of_regular` is **Corollary 6.2.2**: for `k ≥ 9`, every `k`-uniform
+  `k`-regular hypergraph is 2-colourable. The degree count is the content — an edge has `k`
+  vertices, each lying in `k` edges, one being the edge itself, so it meets at most `k(k-1)`
+  others. The side condition `2e(k²-k+1) ≤ 2ᵏ` is an induction from `k = 9`; the *step* needs
+  only `k² - 3k + 1 ≥ 0`, true from `k = 3`, so **`9` is forced by the base case**, not by the
+  induction.
 
 ### Product sample spaces are now available
 
@@ -172,6 +244,11 @@ transversal of the trimmed parts is one of the originals.
 `PMC.exists_enumeration` performs the trimming and the enumeration in one step, and was
 checked on parts of *different* sizes (4 and 2, enumerated at 2) — the case trimming exists
 for.
+
+For events on **more than two** coordinates — §6.4's bad event constrains a vertex's whole
+out-neighbourhood — use `PMC.wprob_unifProd_forall`: independent coordinates multiply, so
+the probability is the product of the per-coordinate ones. Checked on `(Fin 3 → Fin 4)`:
+`36` of `64` functions have both coordinates `0` and `1` nonzero, i.e. `(3/4)²`.
 
 The probability side is also done: `PMC.wprob_unifProd_coord` gives `1/k` for one
 coordinate, and block independence multiplies it to `1/k²` for the two coordinates a bad
@@ -247,19 +324,241 @@ that set, and the dependency neighbourhood excludes `e` itself, so `d ≤ 2kΔ -
 `e p (d + 1) ≤ e (1/k²)(2kΔ) = 2eΔ/k ≤ 1` exactly when `k ≥ 2eΔ`. The theorem is correct;
 the displayed inequality is off by that one edge. **Formalize with `d + 1 ≤ 2kΔ`.**
 
+### §6.3 — proved by a contributor (PR #43, merged)
+
+Task #41 published the statement with a `sorry`. A contributor claimed it 36 seconds later
+and delivered a verified, self-contained proof (PR #43). **The orchestrator proved it
+concurrently and closed the issue four minutes before that PR arrived — a process error.**
+A published task belongs to whoever claims it; proving a claimed task discards a
+contributor's compute and, worse, the reason to contribute at all.
+
+All nine checks passed and the PR is merged, so Theorem 6.3.1 is the first result in this
+project proved by someone other than the orchestrator.
+
+The resolution kept both: `Transversal.lean` is restored to the exact published base so the
+contributor's patch applies to it byte-for-byte, and the orchestrator's modular pieces —
+`PMC.tEvent`, `PMC.determinedOn_tEvent`, `PMC.wprob_tEvent_le`, `PMC.card_tNbr_le` — move to
+`TransversalBlocks.lean`, where they remain verified and available for §6.5 without
+competing for the theorem's name.
+
+**Check the lease before proving anything yourself.** `choir orch tasks` shows claims; the
+race was avoidable by reading it.
+
 **Theorem 6.4.3 (Alon–Linial 1989).** Every directed graph with minimum out-degree `δ` and
 maximum in-degree `Δ` contains a cycle of length divisible by `k`, as long as
 `k ≤ δ / (1 + log(1 + δΔ))`. Theorem 6.4.1 and Corollary 6.4.2 are the `d`-regular
 specialisations.
 
-The probabilistic half is a good fit — label vertices with `ZMod k` uniformly, `A_v` is "no
-out-neighbour of `v` is labelled `x_v + 1`", `P(A_v) = (1 - 1/k)^δ`, and the sample space is
-the uniform product `V → ZMod k`. **The obstacle is the combinatorial half**: extracting a
-directed cycle of length divisible by `k` from the colour-incrementing walk needs digraph
-walk/cycle machinery that Mathlib develops for `SimpleGraph` but not for digraphs. Expect
-that, not the local lemma, to be the bulk of the work.
+### The probabilistic half of §6.4 — proved
 
-The remaining sections (§6.5 lopsided local lemma, §6.6 algorithmic local lemma) each need
-their own setup; §6.5 in particular
-needs a different independence hypothesis (lopsidependency) and so a variant statement, not
-just an application.
+`PMC.exists_labelling_with_successor`: in a loopless digraph where every vertex has
+out-degree exactly `δ` and in-degree at most `Δ`, if
+
+    e ((k-1)/k)^δ (Δ + δΔ + 1) ≤ 1
+
+then the vertices can be labelled by `ZMod k` so that **every vertex has an out-neighbour
+carrying the next label**. That is 6.4.3's hypothesis-side statement as a self-contained
+theorem, and it is the object its cycle argument consumes.
+
+The assembly is short because all four inputs were built to fit `exists_avoiding_of_lll`
+directly: the blocks are `PMC.dblk r v`, the probability bound is `PMC.wprob_dEvent_le`,
+the degree bound is `PMC.card_digraph_dependency_le`, and `PMC.determinedOn_dEvent` (the
+last piece, proved here) says the event only reads coordinates inside its block. **The
+local lemma's `hfar` — far-apart events have disjoint blocks — is discharged from the
+*definition* of the dependency neighbourhood**, which is why the whole degree count enters
+through a single lemma rather than being re-derived inside the assembly.
+
+Non-vacuity checked on the complete digraph on 9 vertices at `k = 2`, where out-degree and
+in-degree are both `8` and `e·(1/2)⁸·(8 + 64 + 1) ≈ 0.775 ≤ 1`: all six hypotheses
+discharge, so the numeric side condition is satisfiable.
+
+**What is left of §6.4 is not probabilistic.** Deriving 6.4.3 from this labelling means
+extracting a directed cycle whose length is divisible by `k` — a walk argument on digraphs,
+see below.
+
+The inputs, for reference: label
+vertices with `ZMod k` uniformly, so the sample space is the uniform product `V → ZMod k`;
+`A_v` is "no out-neighbour of `v` is labelled `x_v + 1`", whose probability
+`(1 - 1/k)^{d⁺(v)}` is `PMC.wprob_unifProd_forall`; and the dependency degree `Δ + δΔ` is
+`PMC.card_digraph_dependency_le`, counted the notes' own three ways and checked **tight** on
+the directed 4-cycle.
+
+Note that this is the notes' *first-pass* degree bound, which gives
+`k ≤ δ/(1 + log(1 + Δ + δΔ))`. Theorem 6.4.3's stated constant
+`k ≤ δ/(1 + log(1 + δΔ))` needs their "final trick" — the observation that `A_v` is
+independent of every `A_w` with `N⁺(v)` disjoint from `N⁺(w) ∪ {w}`, a strictly smaller
+dependency digraph. The first-pass version is what is proved above; the trick can be
+layered on top of it without touching the assembly, since it only shrinks `N`.
+
+### §6.4 — Theorem 6.4.3 is done
+
+`ProbMethods/Chapter06/DivisibleCycle.lean`. The combinatorial half was expected to be the
+bulk of the work, because Mathlib develops walks and cycles for `SimpleGraph` but not for
+digraphs. **It is not, and no digraph machinery was built.**
+
+The observation that avoids it: choosing at each vertex *one* out-neighbour carrying the
+next label packages the labelling as a successor **function** `f : V → V`, and a directed
+cycle is then exactly a *periodic orbit* of `f`. So
+
+* `PMC.exists_cycle_of_successor` — iterating `f` from any vertex must repeat in a finite
+  type (`Finite.exists_ne_map_eq_of_infinite`), which produces a periodic point; the cycle
+  is its orbit. Its vertices are distinct by
+  `Function.iterate_injOn_Iio_minimalPeriod`, and since the label rises by `1` per step,
+  returning to the start after `p` steps gives `x u = x u + p`, i.e. `(p : ZMod k) = 0`, so
+  `k ∣ p`. **Taking the *minimal* period is what makes the vertices distinct** — the period
+  the pigeonhole hands over is a closed walk, not a cycle.
+
+  A cycle of length `p` is recorded as a `c : ℕ → V` with `r (c n) (c (n+1))` for all `n`,
+  `c (n + p) = c n`, and `c` injective on `Set.Iio p`: `p` distinct vertices in directed
+  cyclic order, with no `Walk` analogue needed.
+
+* `PMC.exists_cycle_length_dvd` — Theorem 6.4.3 for out-degree exactly `δ`, the two halves
+  joined. The `choose` step is where "every vertex has *an* out-neighbour with the next
+  label" becomes "*the* chosen out-neighbour", which is what makes the orbit argument
+  available at all.
+
+* `PMC.exists_cycle_length_dvd_of_le_outdegree` — Theorem 6.4.3 with the notes' hypothesis,
+  **minimum** out-degree `δ`, by deleting out-edges: choose `δ` out-neighbours at each
+  vertex and run the argument on the sub-digraph, whose out-degree is exactly `δ` and whose
+  in-degree only dropped. **This reduction is necessary, not cosmetic**: the probability
+  bound wants the out-degree *large* and the dependency-degree bound wants it *small*, so no
+  single inequality on `δ` serves both. The notes leave the step implicit.
+
+* `PMC.exists_cycle_length_dvd_of_log_bound` — the notes' shape,
+  `k ≤ δ / (1 + log(1 + Δ + δΔ))`. The analytic step is `(k-1)/k = 1 - 1/k ≤ exp(-1/k)`,
+  so the left side of the local lemma's condition is at most `exp(1 - δ/k) M`, which is
+  `≤ 1` exactly when `1 + log M ≤ δ/k`.
+
+Non-vacuity checked at both ends: the complete digraph on 9 vertices at `k = 2` for the
+direct numeric form, and on 25 vertices at `k = 2` for the log form
+(`2(1 + log 601) = 14.8 ≤ 24`).
+
+**What is left in §6.4** is only the constant: `Δ + δΔ` where the notes have `δΔ`. That gap
+is the first-pass dependency digraph, and their final trick only *shrinks* `N`, so it plugs
+into the same assembly without touching anything above.
+
+### §6.5 — the lopsided local lemma is proved, and the weakening was free
+
+`PMC.lovasz_local_lemma_lopsided` and `PMC.lovasz_local_lemma_symmetric_lopsided`
+(Erdős–Spencer). The dependency hypothesis is negative correlation,
+
+    P(A i ∩ noneOf A T) ≤ P(A i) · P(noneOf A T),
+
+an inequality rather than the independence equality. **The existing proof already sufficed.**
+It uses the hypothesis exactly once, in a `calc` chain that only ever travels upward, to
+replace `P(A i ∩ noneOf A T₂)` by `P(A i) P(noneOf A T₂)` — so an inequality in that
+direction is all it needed. The change is one `=` to one `≤` in `lll_key`, and the
+independence forms `PMC.lovasz_local_lemma` and `PMC.lovasz_local_lemma_symmetric` become
+one-line corollaries, so every §6.2–§6.4 application is untouched.
+
+This is worth recording as a general lesson: **a proof written multiplicatively, with no
+division, tends to generalize from equality hypotheses to inequality hypotheses for free.**
+The earlier decision to avoid dividing by `P(noneOf A T)` was made to dodge a positivity
+problem, and it paid a second time here.
+
+**Corollary 6.5.6, the derangement bound, is also proved**
+(`PMC.wprob_derangeOn_univ_ge`): a uniform random permutation of an `n`-element set has no
+fixed point with probability at least `(1 - 1/n)^n`. It is the smallest application of the
+lopsided form and shows why that form is needed: the events `σ i = i` are **not**
+independent, so `PMC.lovasz_local_lemma` cannot be used, but they are negatively correlated,
+and the dependency neighbourhood is *empty*.
+
+The supporting layer is `ProbMethods/Permutation.lean`, and it rests on a single device:
+**composing with a transposition.** `σ ↦ Equiv.swap t t' * σ` is a bijection between the
+permutations sending `i` to `t` and those sending `i` to `t'`, which gives
+
+* `PMC.wprob_unifPerm_apply_eq` — `P(σ i = t) = 1/n`, *exactly*. An upper bound would not do:
+  the lopsided hypothesis has `P(A i)` itself on the right-hand side.
+* `PMC.card_filter_fix_le` and `PMC.wprob_fix_inter_derangeOn_le` — the same transposition,
+  now applied to permutations that avoid fixed points on a set `S` with `i ∉ S`. It cannot
+  create a fixed point at `j ∈ S`, because that needs `σ j = swap i t j`, which forces `j = t`
+  and `σ t = i` — impossible when `σ i = i` already. **This is Theorem 6.5.5's random
+  injection argument for single-edge matchings**, with the transposition in the role of the
+  permutation of `Y` carrying `F₀` to `T`.
+
+The negative correlation was checked to be *strict* (`Fin 3` with `S = {1}`: `3 < 4`, i.e.
+`1/6 < 2/9`), so this is not independence in disguise.
+
+**Erratum in Corollary 6.5.6's proof.** The notes write "Since `P(A_i) = 1 - 1/n`, we can set
+`x_i = 1 - 1/n`". Both numbers are the same slip: `P(A_i) = 1/n` and the choice is
+`x_i = 1/n`, which is what makes the displayed `(1 - 1/n)^n` come out.
+
+**The one missing ingredient is published as a task**: `PMC.exists_perm_extend`, that a
+partial injection extends to a permutation *fixing every point outside its domain and image*.
+Mathlib's `Equiv.extendSubtype` does "something arbitrary outside" — its construction happens
+to be the identity off the union, but that is not exposed as a lemma. The clause is not
+decoration: 6.5.5 needs the column permutation carrying one matching to another to leave
+every other column alone, or it could create a forbidden pattern elsewhere.
+
+**Theorem 6.5.11's probability input is also proved**, `PMC.wprob_pairEvent`:
+`P(σ i₁ = j₁ ∧ σ i₂ = j₂) = 1/(n(n-1))`. One transposition again suffices — hold the first
+column fixed and `Equiv.swap` moves the second anywhere else, fixing `j₁` precisely because
+both columns differ from it. The `n-1` rather than `n` is the constraint `σ i₂ ≠ σ i₁`, which
+is why the fibering runs over `univ.erase j₁`.
+
+So of Theorem 6.5.11 (Erdős–Spencer) the probability side is done and the dependency side
+waits on 6.5.5, i.e. on task #44.
+
+### §6.5 — Theorem 6.5.11 proved, modulo the dependency input
+
+`ProbMethods/Chapter06/LatinTransversal.lean`. `PMC.exists_latin_transversal`: if every entry
+of an `n × n` array appears at most `m` times and `4 e m ≤ n`, the array has a Latin
+transversal — a permutation `σ` with the entries `c i (σ i)` pairwise distinct.
+
+The negative-dependence input (Theorem 6.5.5, which waits on task #44) is an **explicit
+hypothesis** `hlop`, in exactly the shape `PMC.lovasz_local_lemma_symmetric_lopsided` consumes.
+So the theorem is sorry-free and does not depend on `PMC.exists_perm_extend`'s `sorry`; what is
+missing is visible in its statement, and discharging it later is a one-line change.
+
+Everything else in the notes' proof is done:
+
+* the probability `1/(n(n-1))` — `PMC.wprob_pairEvent`, already proved;
+* the degree count `PMC.card_badNbrs_le`: `#N(p) ≤ 4n(m-1)`. A neighbour has one of its two
+  cells on one of `p`'s four lines (`PMC.crossCells`, of size at most `4n`) and its other cell
+  among the at most `m - 1` remaining cells with that entry, so the neighbourhood is covered by
+  a `biUnion` over the lines;
+* the arithmetic `e(4n(m-1) + 2) ≤ n(n-1)`, which is where `4 e m ≤ n` enters.
+
+Two decisions worth recording.
+
+**Each unordered bad pair must be one index.** Indexing the bad events by *ordered* pairs of
+cells lists every event twice, which doubles the degree — and the constant `n/(4e)` does not
+survive a factor of two. Orienting each pair by `i₁ < i₂` fixes this, and it also gives the
+row-distinctness `i₁ ≠ i₂` for free.
+
+**The crude `4n` beats the notes' `4n - 4`.** The notes count the four lines by
+inclusion–exclusion; here they are a union bound over two rows and two columns, because the
+slack in `e p (d+1) ≤ 1` is of order `4en` against `n` and four cells' worth of over-count
+costs nothing. The degree bound also holds for the non-bad indices (whose events are empty),
+so no case split on badness is needed anywhere.
+
+Spot-checked by evaluation on the cyclic Latin square of order 3: `9` bad pairs — three pairs
+of equal entries for each of the three symbols — and a maximum neighbourhood of `9`, against
+the bound `4·3·(3−1) = 24`. (The theorem itself says nothing at `n = 3`: `4em ≤ 3` forces
+`m = 0`.)
+
+What remains of §6.5 is Theorem 6.5.5 in **full generality** (arbitrary vertex-disjoint
+matchings in the random injection model) and the Latin-transversal application built on it.
+The single-edge case above is the same argument, so the generalization is a matter of
+replacing the transposition by a permutation carrying one matching to another; the
+bookkeeping, not the idea, is the work.
+
+§6.6 (algorithmic local lemma, Moser–Tardos) needs its own setup: an entropy-compression or
+witness-tree argument, which is a different proof technique rather than a variant statement.
+
+### sphere_regions — Lemma 6.2.14, the arithmetic half
+
+`PMC.region_count_le_cube` (`ProbMethods/Chapter06/SphereRegions.lean`): from `f 1 = 2`,
+`f (m+1) ≤ f m + 2m`, `g 1 = 2` and `g (m+1) ≤ g m + f m`, one gets `g m ≤ m³` for `m ≥ 2`.
+Statement published as a task; proof open.
+
+The two geometric facts — a new circle meets `m` old circles in at most `2m` points, and a new
+sphere is cut by the others into at most `f m` pieces — are **hypotheses**, and the docstring
+says so. Establishing them for actual spheres needs a theory of arrangements Mathlib does not
+have (the intersection count is Bézout for circles on a sphere), so this is honestly the
+arithmetic half of 6.2.14 rather than the lemma. Theorem 6.2.12 (Mani-Levitska–Pach) consumes
+it to bound how many other edges an edge of the covering hypergraph meets, and remains out of
+reach for the same geometric reason.
+
+The recursions actually give `g m ≤ 2m + (m-1)m(m-2)/3`, which is `m³/3` asymptotically; `m³`
+is what the notes state.

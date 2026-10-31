@@ -185,7 +185,7 @@ lemma wvar_eq_wmean_sq_sub (w : Ω → ℝ) (X : Ω → ℝ) (hw : ∑ ω, w ω 
   simp only [wmean]
   ring
 
-/-- **Chebyshev's inequality**, over a finite weighted space.
+/-- **Chebyshev's inequality** (Zhao, Theorem 4.1.5), over a finite weighted space.
 
 The total weight of the points where `X` deviates from its weighted mean by at least `a` is
 at most `wvar w X / a ^ 2`. Stated multiplicatively so no division or positivity side
@@ -226,7 +226,7 @@ theorem wchebyshev' (w : Ω → ℝ) (X : Ω → ℝ) (hw : ∀ ω, 0 ≤ w ω) 
     rw [← add_mul, hsplit]
   linarith
 
-/-- **Markov's inequality** over a finite weighted space.
+/-- **Markov's inequality** over a finite weighted space (Zhao, Theorem 3.3.1).
 
 The total weight of the points where a nonnegative `X` reaches `a` is at most
 `wmean w X / a`. Stated multiplicatively. Mathlib's Markov is `MeasureTheory`-only. -/
@@ -244,7 +244,7 @@ theorem wmarkov (w : Ω → ℝ) (X : Ω → ℝ) (hw : ∀ ω, 0 ≤ w ω) (hX 
         exact mul_nonneg (hw ω) (hX ω)
     _ = wmean w X := rfl
 
-/-- **The second moment method.**
+/-- **The second moment method** (Zhao, Corollary 4.1.7, in the form applications use).
 
 If a count `N` has positive weighted mean, then any set of points where `N` vanishes has
 total weight at most `wvar w N / (wmean w N) ^ 2`. Stated multiplicatively, so there is no
@@ -790,7 +790,7 @@ lemma pweight_mul_pweight (p : α → ℝ) (T U : Finset α) :
   by_cases hT : i ∈ T <;> by_cases hU : i ∈ U <;>
     simp [hT, hU, mem_inter, mem_union] <;> ring
 
-/-- **The Harris–FKG inequality** for independent coordinates (Zhao, §7.1).
+/-- **The Harris–FKG inequality** for independent coordinates (Zhao, Theorem 7.1.5).
 
 Two monotone increasing nonnegative functions are positively correlated under a product
 measure: `E[f] * E[g] ≤ E[f * g]`.
@@ -815,7 +815,8 @@ theorem pweight_fkg (p : α → ℝ) (hp0 : ∀ i, 0 ≤ p i) (hp1 : ∀ i, p i 
   rw [hwsum, one_mul] at h
   simpa only [wmean] using h
 
-/-- **Harris' inequality, decreasing form.** The same statement for *antitone* `f` and `g`.
+/-- **Harris' inequality, decreasing form** (Zhao, Corollary 7.1.6(a)). The same statement
+for *antitone* `f` and `g`.
 
 `Finset α` and its order dual are both distributive lattices, and the log-supermodularity
 `pweight p T * pweight p U = pweight p (T ∩ U) * pweight p (T ∪ U)` is symmetric in `⊓`
@@ -1146,5 +1147,43 @@ theorem card_inter_mul_of_determinedBy {C : Finset α} {A A' : Finset (Finset α
   ring
 
 end Bernoulli
+
+
+/-! ### Some point is at most the average
+
+The probabilistic method's core move, in weighted form. -/
+
+/-- **Some point is at most the average.** If the weights are nonnegative and total `1`, some
+point has value at most the weighted mean — the averaging step every application of the
+probabilistic method makes. -/
+theorem exists_le_wmean {Ω : Type*} [Fintype Ω] {w : Ω → ℝ} (hw : ∀ ω, 0 ≤ w ω)
+    (hsum : ∑ ω, w ω = 1) (f : Ω → ℝ) : ∃ ω, f ω ≤ wmean w f := by
+  by_contra hcon
+  push_neg at hcon
+  -- some weight is positive, since they total `1`
+  obtain ⟨ω₀, -, hω₀⟩ : ∃ ω ∈ (univ : Finset Ω), 0 < w ω := by
+    by_contra hall
+    push_neg at hall
+    have : ∑ ω, w ω = 0 :=
+      Finset.sum_eq_zero fun ω hω => le_antisymm (hall ω hω) (hw ω)
+    rw [this] at hsum
+    exact zero_ne_one hsum
+  have hlt : ∑ ω, w ω * wmean w f < ∑ ω, w ω * f ω := by
+    refine Finset.sum_lt_sum (fun ω _ => ?_) ⟨ω₀, mem_univ _, ?_⟩
+    · exact mul_le_mul_of_nonneg_left (le_of_lt (hcon ω)) (hw ω)
+    · exact mul_lt_mul_of_pos_left (hcon ω₀) hω₀
+  rw [← Finset.sum_mul, hsum, one_mul] at hlt
+  exact absurd hlt (lt_irrefl (wmean w f))
+
+/-- **Some point is at least the average**, the other half of the same move. -/
+theorem exists_wmean_le {Ω : Type*} [Fintype Ω] {w : Ω → ℝ} (hw : ∀ ω, 0 ≤ w ω)
+    (hsum : ∑ ω, w ω = 1) (f : Ω → ℝ) : ∃ ω, wmean w f ≤ f ω := by
+  obtain ⟨ω, hω⟩ := exists_le_wmean hw hsum (fun ω => -f ω)
+  refine ⟨ω, ?_⟩
+  have hneg : wmean w (fun ω => -f ω) = -wmean w f := by
+    rw [wmean, wmean, ← Finset.sum_neg_distrib]
+    exact Finset.sum_congr rfl fun ω _ => by ring
+  rw [hneg] at hω
+  linarith
 
 end PMC

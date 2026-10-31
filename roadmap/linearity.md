@@ -168,6 +168,15 @@ The sampling step is then a double count resting on the identity
 inside each 5-subset gives `#H * C(n-3,2)` on one side and at most `7 * C(n,5)` on the
 other.
 
+### Proposition 2.4.2, the four-vertex version — proved
+
+`PMC.card_le_of_not_hasTetrahedron_four`: `4 #H ≤ 3 C(n,3)` for `n ≥ 4`. The same double
+count as 2.4.4 with four vertices in place of five, and here the base case *is* the
+hypothesis — a `4`-set carrying all four of its triples is a tetrahedron — so no case check is
+needed. Worth having next to 2.4.4 because the pair shows exactly what sampling one more
+vertex buys (`3/4 → 7/10`) and what it costs (a base case, which is also where the notes' own
+`n ≥ 4` slips to `n ≥ 5`).
+
 ## Unbalancing lights (§2.5)
 
 Theorem 2.5.1 is asymptotic — `(sqrt(2/π) + o(1)) * n^(3/2)` — so by the roadmap's
@@ -182,8 +191,10 @@ which is the book's bound with the central limit theorem removed — the CLT is 
 turn that closed form into `sqrt(2/π) * n^(3/2)`. Stating it this way keeps the node in
 Chapter 2 rather than deferring it behind Chapter 9's machinery.
 
-Theorem 2.5.2 is **not** a node: its proof rests on a compactness argument producing an
-unspecified constant `c_k`, which is not something a `prove` task can be checked against.
+Theorem 2.5.2 **was** recorded here as not a node, on the ground that its proof rests on a
+compactness argument producing an unspecified constant `c_k`, "which is not something a
+`prove` task can be checked against". **The constant is `2^{-k}`, and both 2.5.2 and its
+Lemma 2.5.3 are now proved** — see below.
 
 ### unbalancing_lights
 `PMC.exists_signs_two_pow_mul_le` — Theorem 2.5.1, explicit form. Written multiplicatively
@@ -198,6 +209,57 @@ theorem itself was verified **exhaustively over every `±1` matrix** for `n = 1.
 *tight* at `n = 1` and `n = 2` — the hardest matrix meets the bound exactly — which is the
 useful part of the check: it says the constant is not accidentally slack, so a proof that
 loses anything will fail.
+
+### poly_cube — Lemma 2.5.3, with `c_k = 2^{-k}`
+
+`PMC.exists_abs_eval_ge` (`ProbMethods/Chapter02/PolyCube.lean`): if `g` has degree at most
+`k` in `k` variables and the coefficient of `p₁p₂⋯p_k` is `1`, then `|g(p)| ≥ 2^{-k}` at one
+of the `2^k` **corners** of `[0,1]^k`.
+
+The notes' proof is a compactness argument — `M(g) = max_{[0,1]^k}|g|` is continuous and
+positive on the compact family of admissible coefficient vectors, hence has a positive minimum
+— and yields no value for `c_k`. The explicit proof is a finite difference:
+
+    Δg = ∑_{S ⊆ [k]} (-1)^{k-#S} g(χ_S)
+
+is *exactly* the coefficient of `p₁⋯p_k`, because the kernel `∑_{S ⊇ T} (-1)^{k-#S}` vanishes
+unless `T = [k]`, and a monomial of degree `≤ k` in `k` variables whose exponent vector has
+full support is `p₁⋯p_k`. So `2^k` numbers sum to `1` and one of them is `≥ 2^{-k}`.
+
+Two consequences worth recording:
+
+* **the coefficient bound `|aᵢ| ≤ 1` in the notes' hypothesis is not needed.** The finite
+  difference isolates one coefficient exactly, whatever the others are — `p₁p₂ + 100(p₁²+p₂²)`
+  has `Δ = 1` just like `p₁p₂` does.
+* the value `2^{-k}` is what makes Theorem 2.5.2 statable at all.
+
+Checked before committing: `Δg = 1` exactly (to the last bit, over ℚ-valued random
+coefficients) and `max_corner |g| ≥ 2^{-k}` for `k = 1..6`, 200 random polynomials each.
+
+### unbalanced_hypergraph — Theorem 2.5.2
+
+`PMC.exists_unbalanced_partSet`: for `V = V₁ ∪ ⋯ ∪ V_k` with `#Vᵢ = n` and a red/blue colouring
+of the `k`-element subsets in which every transversal edge is blue, some `S ⊆ V` has
+
+    |#{blue edges in S} − #{red edges in S}| ≥ n^k / 2^k.
+
+**`S` can be taken to be a union of whole parts** — a strengthening that comes free, and the
+reason the proof needs no polynomial. The notes form the expected imbalance
+`f(p₁,…,p_k) = ∑ a_{i…} p_i⋯` and apply Lemma 2.5.3 to it; but 2.5.3's own proof only ever
+evaluates at corners, where `pᵢ ∈ {0,1}` and the random set is deterministic. Applying the
+same kernel `PMC.sum_sign_subset` one level up, directly to the signed edge count `D(V_S)`,
+gives the theorem with the polynomial never formed:
+
+    ∑_S (-1)^{#Sᶜ} D(V_S) = ∑_{e meets every part} sgn(e) = n^k,
+
+the last step because an edge with `#e = k` meeting all `k` parts is a transversal
+(`PMC.filter_image_fst_eq_univ`, whose content is that `∑ᵢ #(e ∩ Vᵢ) = k` with all fibres
+nonempty forces all fibres to be singletons), and every transversal is blue by hypothesis.
+
+Brute-forced before committing: over **all** `2^{#free edges}` colourings for `k = n = 2`
+(worst case `2`, bound `1`) and over 400 random colourings for `(k,n) = (2,3), (3,2), (2,4)`.
+At `(2,3)` the worst colouring gives `3` against a bound of `2.25`, so the constant is not
+wildly slack.
 
 ## Crossing number inequality (§2.6) — DEFERRED
 
