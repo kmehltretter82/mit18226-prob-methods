@@ -110,6 +110,55 @@ is `Finset V` under the uniform weight, and `PMC.monoEvent edge i` is the event 
   `2` times the free coordinates. Checked numerically at `(n,k) = (4,2)` and `(5,3)`, both
   giving `8`.
 
+### §6.2 — the non-uniform criterion (Theorem 6.2.4) — done
+
+`PMC.exists_two_coloring_of_weight_sum`: a hypergraph all of whose edges have at least
+three vertices is 2-colourable as soon as
+
+    ∑_{f ≠ e, f ∩ e ≠ ∅} 2^(-#f) ≤ 1/8   for every edge e.
+
+`PMC.lovasz_local_lemma_quarter` (Corollary 6.1.10) at the monochromatic events: `#e ≥ 3`
+gives `P(A_e) = 2^{1-#e} ≤ 1/4 < 1/2`, and the hypothesis gives
+`∑_{f ∈ N(e)} P(A_f) = 2 ∑ 2^{-#f} ≤ 1/4`.
+
+This needed `PMC.wprob_monoEvent`, the *exact* probability `2^{1-#e}` rather than the `≤`
+bound the symmetric application uses — the point of the criterion is that it sums
+probabilities over neighbours of **different sizes**, which is the notes' Remark 6.2.5: the
+sign to look past the symmetric local lemma is bad events of very different probabilities.
+
+Sanity check on how much it buys: for a 3-uniform hypergraph the hypothesis reads
+`#N(e) ≤ 1`, where the symmetric form (Theorem 6.2.1) needs `e(d+1)/4 ≤ 1`, i.e. `d = 0`.
+
+One deliberate difference from the notes: the sum here is over *indices* `j ≠ i` rather than
+over distinct edges, so two indices carrying the same edge set are counted twice. That makes
+the hypothesis stronger than the notes' and the theorem no weaker, and it keeps the indexed
+convention the rest of the file uses.
+
+### §6.2 — the compactness step (Theorem 6.2.6) — proved
+
+`ProbMethods/Chapter06/Compactness.lean`. `PMC.exists_two_coloring_of_finite`: for a family of
+**finite** edges on an **arbitrary** vertex set, if every finite set of vertices carries a
+colouring good on the edges inside it, then some colouring is good on every edge. Both `V` and
+the index type are arbitrary — no cardinality hypothesis anywhere, which is the point.
+
+`V → Bool` is compact (Tychonoff), the good sets are closed — "edge `i` is bichromatic" is the
+*finite* union over pairs `u, v ∈ edge i` of `{c | c u ≠ c v}`, each a preimage of a set in a
+discrete space under a continuous evaluation — the family is directed downwards, and each member
+is nonempty by hypothesis. Every edge lies inside some finite `X`, namely its own vertex set, so
+a member of the intersection is a global colouring.
+
+**This was recorded as blocked on "compactness over infinite ground sets", which Mathlib turns
+out to supply directly**: `IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed`
+and the `Pi` compact-space instance. That is now the *third* deferral in this project that
+Mathlib had already answered (FKG, Theorem 5.0.5, this) — the pattern is that structural
+reasons to give up are the ones worth checking.
+
+What remains of Theorem 6.2.6 as literally stated is transport of the finite half into the
+compactness step, which is bookkeeping and is published as a task: restricting to `↥X` and
+`{i // edge i ⊆ X}` (finite, because at most `d+1` indices carry any one edge and there are at
+most `2^{#X}` edges inside `X`), carrying edges across with `Finset.subtype`, and turning the
+returned `Finset V` into a colouring. The file's docstring records the route step by step.
+
 ### §6.2 — done
 
 `PMC.exists_two_coloring_of_local_lemma`: a `k`-uniform hypergraph in which every edge
@@ -134,6 +183,29 @@ The assembly took four supporting pieces, all reusable for §6.3–§6.4:
 theorem is not true-by-empty-hypotheses. Worth doing for any statement whose hypotheses are
 a numeric inequality — a mis-stated constant turns the whole result into a tautology, and
 nothing in the gate would catch it.
+
+### §6.2's other numbered results, from the coverage audit
+
+* `PMC.exists_two_coloring_of_local_lemma'` is **Theorem 6.2.6** in the finite case: edges of
+  size *at least* `k` rather than exactly `k`. The generalisation cost nothing — an edge of
+  size `m ≥ k` is monochromatic with probability `2^{1-m} ≤ 2^{1-k}`, and the symmetric local
+  lemma only ever wanted an upper bound. Theorem 6.2.1 is now the uniform corollary. The
+  notes also state 6.2.6 for *infinite* vertex sets, which needs their compactness Lemma
+  6.2.7. **That lemma is now proved in the generality the notes state it** —
+  `PMC.exists_avoid_all_of_avoid_finite` (`ProbMethods/Chapter06/AvoidEvents.lean`): variables
+  with finitely many choices each, possibly infinitely many events, each depending on a finite
+  set of variables; avoiding every finite subset of events implies avoiding all of them.
+  Tychonoff on `∀ i, C i` with discrete finite factors, plus the directed-intersection lemma.
+  The step that needs the variable model is that each bad set is *clopen*, because `bad j`
+  factors through the restriction to the finite `dep j`; that is precisely what Remark 6.2.8
+  warns is missing in general. `PMC.exists_two_coloring_of_finite` is the `C i = Bool` case,
+  and `PMC.exists_two_coloring_of_avoid` re-derives it from the general lemma.
+* `PMC.exists_two_coloring_of_regular` is **Corollary 6.2.2**: for `k ≥ 9`, every `k`-uniform
+  `k`-regular hypergraph is 2-colourable. The degree count is the content — an edge has `k`
+  vertices, each lying in `k` edges, one being the edge itself, so it meets at most `k(k-1)`
+  others. The side condition `2e(k²-k+1) ≤ 2ᵏ` is an induction from `k = 9`; the *step* needs
+  only `k² - 3k + 1 ≥ 0`, true from `k = 3`, so **`9` is forced by the base case**, not by the
+  induction.
 
 ### Product sample spaces are now available
 
@@ -427,6 +499,44 @@ is why the fibering runs over `univ.erase j₁`.
 So of Theorem 6.5.11 (Erdős–Spencer) the probability side is done and the dependency side
 waits on 6.5.5, i.e. on task #44.
 
+### §6.5 — Theorem 6.5.11 proved, modulo the dependency input
+
+`ProbMethods/Chapter06/LatinTransversal.lean`. `PMC.exists_latin_transversal`: if every entry
+of an `n × n` array appears at most `m` times and `4 e m ≤ n`, the array has a Latin
+transversal — a permutation `σ` with the entries `c i (σ i)` pairwise distinct.
+
+The negative-dependence input (Theorem 6.5.5, which waits on task #44) is an **explicit
+hypothesis** `hlop`, in exactly the shape `PMC.lovasz_local_lemma_symmetric_lopsided` consumes.
+So the theorem is sorry-free and does not depend on `PMC.exists_perm_extend`'s `sorry`; what is
+missing is visible in its statement, and discharging it later is a one-line change.
+
+Everything else in the notes' proof is done:
+
+* the probability `1/(n(n-1))` — `PMC.wprob_pairEvent`, already proved;
+* the degree count `PMC.card_badNbrs_le`: `#N(p) ≤ 4n(m-1)`. A neighbour has one of its two
+  cells on one of `p`'s four lines (`PMC.crossCells`, of size at most `4n`) and its other cell
+  among the at most `m - 1` remaining cells with that entry, so the neighbourhood is covered by
+  a `biUnion` over the lines;
+* the arithmetic `e(4n(m-1) + 2) ≤ n(n-1)`, which is where `4 e m ≤ n` enters.
+
+Two decisions worth recording.
+
+**Each unordered bad pair must be one index.** Indexing the bad events by *ordered* pairs of
+cells lists every event twice, which doubles the degree — and the constant `n/(4e)` does not
+survive a factor of two. Orienting each pair by `i₁ < i₂` fixes this, and it also gives the
+row-distinctness `i₁ ≠ i₂` for free.
+
+**The crude `4n` beats the notes' `4n - 4`.** The notes count the four lines by
+inclusion–exclusion; here they are a union bound over two rows and two columns, because the
+slack in `e p (d+1) ≤ 1` is of order `4en` against `n` and four cells' worth of over-count
+costs nothing. The degree bound also holds for the non-bad indices (whose events are empty),
+so no case split on badness is needed anywhere.
+
+Spot-checked by evaluation on the cyclic Latin square of order 3: `9` bad pairs — three pairs
+of equal entries for each of the three symbols — and a maximum neighbourhood of `9`, against
+the bound `4·3·(3−1) = 24`. (The theorem itself says nothing at `n = 3`: `4em ≤ 3` forces
+`m = 0`.)
+
 What remains of §6.5 is Theorem 6.5.5 in **full generality** (arbitrary vertex-disjoint
 matchings in the random injection model) and the Latin-transversal application built on it.
 The single-edge case above is the same argument, so the generalization is a matter of
@@ -435,3 +545,20 @@ bookkeeping, not the idea, is the work.
 
 §6.6 (algorithmic local lemma, Moser–Tardos) needs its own setup: an entropy-compression or
 witness-tree argument, which is a different proof technique rather than a variant statement.
+
+### sphere_regions — Lemma 6.2.14, the arithmetic half
+
+`PMC.region_count_le_cube` (`ProbMethods/Chapter06/SphereRegions.lean`): from `f 1 = 2`,
+`f (m+1) ≤ f m + 2m`, `g 1 = 2` and `g (m+1) ≤ g m + f m`, one gets `g m ≤ m³` for `m ≥ 2`.
+Statement published as a task; proof open.
+
+The two geometric facts — a new circle meets `m` old circles in at most `2m` points, and a new
+sphere is cut by the others into at most `f m` pieces — are **hypotheses**, and the docstring
+says so. Establishing them for actual spheres needs a theory of arrangements Mathlib does not
+have (the intersection count is Bézout for circles on a sphere), so this is honestly the
+arithmetic half of 6.2.14 rather than the lemma. Theorem 6.2.12 (Mani-Levitska–Pach) consumes
+it to bound how many other edges an edge of the covering hypergraph meets, and remains out of
+reach for the same geometric reason.
+
+The recursions actually give `g m ≤ 2m + (m-1)m(m-2)/3`, which is `m³/3` asymptotically; `m³`
+is what the notes state.
