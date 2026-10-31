@@ -67,11 +67,61 @@ availability of the mathematics. Recorded as upstream in `graph.json`.
   product `Fin n → (Fin n → Bool)`, which is what the bounded-differences development is
   stated for, at the cost of redundant coordinates that no lemma has to mention.
 
-* **§9.2 martingale concentration** is upstream:
-  `measure_sum_ge_le_of_HasCondSubgaussianMGF` in `SubGaussian.lean` is the
-  **Azuma–Hoeffding inequality**. `Mathlib/Probability/Martingale/` supplies the martingale
-  theory around it (`Basic`, `Convergence`, `OptionalStopping`, `OptionalSampling`,
-  `Upcrossing`, `BorelCantelli`, `Centering`).
+* **§9.2 martingale concentration — now proved here** (`Chapter09/Azuma.lean`), after a closer
+  look at what Mathlib does and does not supply.
+
+  Mathlib's `measure_sum_ge_le_of_hasCondSubgaussianMGF` is Azuma–Hoeffding, but it takes
+  *conditional sub-Gaussianity of the increments* as a hypothesis, and the step the notes
+  actually need — bounded increments ⟹ conditionally sub-Gaussian — is **not** upstream: there
+  is no `hasCondSubgaussianMGF_of_mem_Icc`. Using it would also require a `StandardBorelSpace`
+  instance and a `Filtration`. So "§9.2 is upstream" was too quick.
+
+  `PMC.wprob_martingale_ge_le` is Theorem 9.2.8 in the finite framework:
+  `P(Z_n - Z_0 ≥ t) ≤ exp(-t²/(2∑cᵢ²))`, with `PMC.wprob_martingale_ge_sqrt_le` the `cᵢ = 1`
+  case (Theorem 9.2.7). **The design decision that made it short: conditioning by
+  reweighting.** A filtration step is a map `π : Ω → K`, and instead of restricting to a fibre
+  — subtypes, and a change of sample space at every step — `PMC.fibreWeight` renormalises the
+  weight on the fibre and zeroes it elsewhere. That is again a weight on the same `Ω`, so
+  Hoeffding's lemma applies fibrewise with no transport, and the whole induction is
+  `PMC.wmean_exp_step` applied `n` times.
+
+  Theorem 9.2.9 (Azuma for Doob martingales) is §9.1's `PMC.card_filter_ge_le`, which carries
+  the *sharper* constant `-2t²/∑cᵢ²` — four times better in the exponent, because there the
+  `cᵢ` bound the conditional range of the increment rather than the increment itself.
+
+  `Mathlib/Probability/Martingale/` remains the place to look for the martingale theory proper
+  (convergence, optional stopping, Doob's inequalities).
+* **§9.5's median statements — the median is now built.** `PMC.exists_isMedian`: every
+  real-valued function on a nonempty finite type has a median, by a counting argument rather
+  than compactness — take the *least* attained value with half the points below it, and
+  minimality forces half the points at or above. `PMC.card_filter_le_median_le` is then
+  **Corollary 9.5.22**, `P(f ≤ M f - t) ≤ 2 exp(-t²/(4s))`: Talagrand's inequality bounds a
+  *product* `P(f ≤ r-t) P(f ≥ r)`, and being a median is exactly what makes the second factor
+  at least `1/2`.
+
+  Kept in a separate file (`Chapter09/Median.lean`) because `Chapter09/Talagrand.lean` holds
+  task #49's target declaration and is left byte-for-byte as published.
+
+  The notes' exponent is `-t²/(4 M f)`, taking `s = r` from "`{f ≥ r}` is `r`-certifiable for
+  every `r`"; keeping `s` explicit avoids rounding a real median to a certificate size, and the
+  notes' form is the instance `s = ⌈M⌉`.
+
+* **Theorem 9.4.8 — proved** (`Chapter09/Equivalence.lean`). The equivalence of the two faces of
+  concentration, for a finite weighted space with any pseudometric: expansion
+  (`P(A) ≥ 1/2 ⟹ P(Aₜ) ≥ 1-ε`) and concentration of Lipschitz functions
+  (`P(f ≤ m) ≥ 1/2 ⟹ P(f > m+t) ≤ ε`). `PMC.concentration_of_expansion` and
+  `PMC.expansion_of_concentration`.
+
+  Both directions are short once the right object is named, and they are the canonical two:
+  the sublevel set `{f ≤ m}`, whose `t`-neighbourhood lies inside `{f ≤ m+t}` by
+  Lipschitzness, and the function `x ↦ dist(x, A)`, which is `1`-Lipschitz by the triangle
+  inequality at the nearest point. Only symmetry and the triangle inequality are used — no
+  `d x y = 0 → x = y` — so it applies verbatim to `PMC.hamDist` on the cube.
+
+  This is the theorem that licenses §9.4's habit of moving between isoperimetry and
+  concentration, and it explains why Harper's inequality and the bounded-differences
+  inequality are two readings of one phenomenon.
+
 * **§9.5 Talagrand's inequality** — absent from Mathlib; the **convex distance is now set up
   here** (`Chapter09/Talagrand.lean`) and the inequality itself is published as a task.
 
@@ -81,6 +131,24 @@ availability of the mathematics. Recorded as upstream in `graph.json`.
   `sSup` over the unit sphere of nonnegative weights — well defined because
   `PMC.wDistToSet_le_sqrt` bounds the set by `√n` via Cauchy–Schwarz. It vanishes on `A` and
   is nonnegative.
+
+  **Theorem 9.5.21 (certifiable functions) is proved**, given the inequality as a hypothesis
+  (`PMC.card_mul_card_certifiable_le`): `P(f ≤ r-t) P(f ≥ r) ≤ e^{-t²/(4s)}`. That is the
+  *combinatorial* half of the section, and it turned out to need **no convex geometry at
+  all** — the normalised indicator of a certificate is already a unit weight vector
+  witnessing `d_T(y,A) ≥ t/√s` (`PMC.unitWeights_indicator`), and the rest is counting, with
+  `PMC.card_disagree_ge` supplying the key step by *splicing* the certificate's coordinates
+  in. It is also the form the section's applications use, and **the first of those is done**:
+  `PMC.card_mul_card_lisLength_le` (`Chapter09/LIS.lean`) concentrates the length of the
+  longest increasing subsequence. Corollary 9.5.23 is stated asymptotically in the notes
+  (`P(|X - M X| ≤ Cn^{1/4}) ≥ 1 - ε`), but its content is the finite tail bound, which is what
+  9.5.21 delivers. Both hypotheses hold for clean reasons: deleting the disagreeing indices
+  from a witness gives the Lipschitz bound, and `k` indices of a witnessing subsequence
+  certify `{lis ≥ k}` — which is exactly what "a witness of size `s`" means, and why
+  `s`-certifiability is the right hypothesis.
+
+  §9.6 (Euclidean TSP) remains out of reach: it lives on `[0,1]²`, so it needs continuous
+  measure rather than more combinatorics.
 
   **Why it is worth the trouble**: the bounded differences bound degrades as `exp(-t²/n)`,
   while Talagrand's has no `n` in the exponent at all. The proof is an induction on
