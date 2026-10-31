@@ -630,7 +630,7 @@ private lemma hamDist_insert_self_le {m : ℕ} (x : Fin m) (T : Finset (Fin m)) 
 private lemma hamDist_self {m : ℕ} (T : Finset (Fin m)) : hamDist T T = 0 := by
   simp [hamDist]
 
-private lemma hamDist_triangle {m : ℕ} (R S T : Finset (Fin m)) :
+private lemma hamDist_le_add {m : ℕ} (R S T : Finset (Fin m)) :
     hamDist R T ≤ hamDist R S + hamDist S T := by
   have h1 : R \ T ⊆ (R \ S) ∪ (S \ T) := by
     intro x; simp only [mem_sdiff, mem_union]; tauto
@@ -678,7 +678,7 @@ private lemma cubeNbhd_one_cubeNbhd_subset {m : ℕ} (t : ℕ) (A : Finset (Fins
   obtain ⟨S, hS, hST⟩ := hT
   rw [mem_cubeNbhd] at hS
   obtain ⟨R, hR, hRS⟩ := hS
-  exact ⟨R, hR, (hamDist_triangle R S T).trans (by omega)⟩
+  exact ⟨R, hR, (hamDist_le_add R S T).trans (by omega)⟩
 
 /-- `#(lowBall n (m+1)) = #(lowBall n m) + C(n,m)`. -/
 private lemma card_lowBall_succ (m : ℕ) : #(lowBall n (m + 1)) = #(lowBall n m) + n.choose m := by
